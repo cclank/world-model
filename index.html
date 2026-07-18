@@ -88,6 +88,8 @@ h2{font-size:clamp(32px,4.6vw,58px);font-weight:600;letter-spacing:.14em;margin:
 .cmd-input::placeholder{color:rgba(233,228,216,.25);font-weight:300;letter-spacing:.1em}
 .cmd-input:focus{border-color:var(--gold2);box-shadow:0 18px 30px -22px rgba(200,164,92,.35)}
 .chips{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.chip2{width:46px;height:46px;font-size:17px;opacity:.8}
+.chip2:hover,.chip2.active{opacity:1}
 .chip{width:56px;height:56px;border-radius:50%;border:1px solid rgba(233,228,216,.16);background:rgba(233,228,216,.03);color:var(--paper);font-family:var(--serif);font-size:20px;display:grid;place-items:center;transition:all .35s cubic-bezier(.22,1,.36,1)}
 .chip:hover,.chip.active{border-color:var(--gold);color:var(--gold2);transform:translateY(-5px);box-shadow:0 12px 30px -10px rgba(200,164,92,.35)}
 .status{font-family:var(--mono);font-size:12px;letter-spacing:.25em;color:var(--gold);min-height:1.2em}
@@ -209,6 +211,16 @@ footer .line{width:60px;height:1px;background:rgba(200,164,92,.4)}
         <button class="chip" data-law="风">风</button>
         <button class="chip" data-law="海">海</button>
         <button class="chip" data-law="雷">雷</button>
+        <button class="chip chip2" data-law="云">云</button>
+        <button class="chip chip2" data-law="山">山</button>
+        <button class="chip chip2" data-law="霞">霞</button>
+        <button class="chip chip2" data-law="萤">萤</button>
+        <button class="chip chip2" data-law="墨">墨</button>
+        <button class="chip chip2" data-law="月">月</button>
+        <button class="chip chip2" data-law="冰">冰</button>
+        <button class="chip chip2" data-law="夜">夜</button>
+        <button class="chip chip2" data-law="梦">梦</button>
+        <button class="chip chip2" data-law="龙">龙</button>
       </div>
       <p class="status reveal"><span class="prompt">&gt;&nbsp;</span><span id="statusText">静待法旨</span><span class="caret">_</span></p>
       <button id="autoPlay" class="auto-play reveal">自动演绎 · 关</button>
