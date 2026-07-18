@@ -656,9 +656,9 @@ const emitters = {
     if (frame % 3 === 0)
       spawn({ x: rand(0, W), y: rand(H * .08, H * .6), vx: rand(-.25, .25), vy: rand(-.05, .1), mode: 'fx', kind: 'mote', decay: .001, life: 1, size: rand(2, 5.5), color: '200,204,214', alpha: rand(.08, .2) });
     /* 金鳞自龙身散落 */
-    if (frame % 4 === 0 && dragonTrail.length > 10){
+    if (frame % 3 === 0 && dragonTrail.length > 10){
       const p = dragonTrail[(Math.random() * dragonTrail.length) | 0];
-      spawn({ x: p.x + rand(-8, 8), y: p.y + rand(-8, 8), vx: rand(-.3, .3), vy: rand(.1, .5), mode: 'fx', kind: 'spark', decay: rand(.01, .02), life: 1, size: rand(.8, 1.6), color: '246,222,150', alpha: rand(.5, 1) });
+      spawn({ x: p.x + rand(-14, 14), y: p.y + rand(-14, 14), vx: rand(-.3, .3), vy: rand(.1, .5), mode: 'fx', kind: 'spark', decay: rand(.008, .016), life: 1, size: rand(1.2, 2.4), color: '246,222,150', alpha: rand(.5, 1) });
     }
     /* 龙吟引雷，十五秒一瞬 */
     if (frame % 900 === 450) spawnBolt();
@@ -997,44 +997,44 @@ function drawDragon(t){
   const hx = W * .5 + Math.sin(t / 3600) * W * .34 + Math.sin(t / 1570) * W * .07;
   const hy = H * .36 + Math.sin(t / 2300) * H * .15 + Math.sin(t / 940) * H * .05;
   if (!dragonTrail.length)
-    for (let i = 0; i < 56; i++) dragonTrail.push({ x: hx - i * 13, y: hy });
+    for (let i = 0; i < 48; i++) dragonTrail.push({ x: hx - i * 17, y: hy });
   dragonTrail[0].x = hx; dragonTrail[0].y = hy;
   for (let i = 1; i < dragonTrail.length; i++){
     const a = dragonTrail[i - 1], b = dragonTrail[i];
     const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || .001;
-    b.x = a.x + dx / d * 13; b.y = a.y + dy / d * 13;
+    b.x = a.x + dx / d * 17; b.y = a.y + dy / d * 17;
   }
   const N = dragonTrail.length;
   if (N < 3) return;
   /* 龙身：自尾至首，由细而粗 */
   for (let i = N - 1; i >= 0; i--){
     const p = dragonTrail[i], k = 1 - i / N;
-    const r = 1.2 + k * k * 8.5;
+    const r = 2 + k * k * 13;
     const warm = k > .55 ? '246,222,150' : '222,186,110';
-    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 1.6);
-    g.addColorStop(0, `rgba(${warm},${.13 + k * .34})`);
+    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 1.7);
+    g.addColorStop(0, `rgba(${warm},${.13 + k * .3})`);
     g.addColorStop(1, 'rgba(222,186,110,0)');
     ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(p.x, p.y, r * 1.6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x, p.y, r * 1.7, 0, Math.PI * 2); ctx.fill();
     /* 龙脊实线——金骨一脉 */
     if (i > 0){
       const q = dragonTrail[i - 1];
       ctx.beginPath();
       ctx.moveTo(p.x, p.y);
       ctx.lineTo(q.x, q.y);
-      ctx.strokeStyle = `rgba(240,208,130,${.1 + k * .3})`;
-      ctx.lineWidth = 1 + k * 2.2;
+      ctx.strokeStyle = `rgba(240,208,130,${.12 + k * .3})`;
+      ctx.lineWidth = 1.2 + k * 3;
       ctx.stroke();
     }
     /* 脊鬃 */
-    if (i % 4 === 2 && i > 3){
+    if (i % 3 === 1 && i > 3){
       const q = dragonTrail[i - 3];
       const ang = Math.atan2(p.y - q.y, p.x - q.x) - Math.PI / 2 + Math.sin(t / 300 + i) * .2;
       ctx.beginPath();
       ctx.moveTo(p.x, p.y);
-      ctx.lineTo(p.x + Math.cos(ang) * r * 2, p.y + Math.sin(ang) * r * 2);
-      ctx.strokeStyle = `rgba(240,214,150,${.1 + k * .22})`;
-      ctx.lineWidth = 1;
+      ctx.lineTo(p.x + Math.cos(ang) * r * 2.6, p.y + Math.sin(ang) * r * 2.6);
+      ctx.strokeStyle = `rgba(240,214,150,${.12 + k * .26})`;
+      ctx.lineWidth = 1.2;
       ctx.stroke();
     }
   }
@@ -1042,27 +1042,37 @@ function drawDragon(t){
   const hd = dragonTrail[0], nk = dragonTrail[4] || hd;
   const ha = Math.atan2(hd.y - nk.y, hd.x - nk.x);
   const px = Math.cos(ha + Math.PI / 2), py = Math.sin(ha + Math.PI / 2);
-  ctx.fillStyle = 'rgba(255,240,190,.9)';
-  ctx.beginPath(); ctx.arc(hd.x + Math.cos(ha) * 4 + px * 3, hd.y + Math.sin(ha) * 4 + py * 3, 1.6, 0, Math.PI * 2); ctx.fill();
+  /* 龙首威光 */
+  const hg = ctx.createRadialGradient(hd.x, hd.y, 0, hd.x, hd.y, 27);
+  hg.addColorStop(0, 'rgba(250,228,160,.34)');
+  hg.addColorStop(1, 'rgba(222,186,110,0)');
+  ctx.fillStyle = hg;
+  ctx.beginPath(); ctx.arc(hd.x, hd.y, 27, 0, Math.PI * 2); ctx.fill();
+  /* 金睛 */
+  ctx.fillStyle = 'rgba(255,240,190,.95)';
+  ctx.beginPath(); ctx.arc(hd.x + Math.cos(ha) * 6 + px * 4, hd.y + Math.sin(ha) * 6 + py * 4, 2.2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(hd.x + Math.cos(ha) * 6 - px * 4, hd.y + Math.sin(ha) * 6 - py * 4, 2.2, 0, Math.PI * 2); ctx.fill();
   for (const s of [-1, 1]){
+    /* 龙角 */
     ctx.beginPath();
-    ctx.moveTo(hd.x + px * 4 * s, hd.y + py * 4 * s);
+    ctx.moveTo(hd.x + px * 6 * s, hd.y + py * 6 * s);
     ctx.quadraticCurveTo(
-      hd.x - Math.cos(ha) * 12 + px * 9 * s, hd.y - Math.sin(ha) * 12 + py * 9 * s,
-      hd.x - Math.cos(ha) * 22 + px * 6 * s, hd.y - Math.sin(ha) * 22 + py * 6 * s
+      hd.x - Math.cos(ha) * 18 + px * 13 * s, hd.y - Math.sin(ha) * 18 + py * 13 * s,
+      hd.x - Math.cos(ha) * 34 + px * 9 * s, hd.y - Math.sin(ha) * 34 + py * 9 * s
     );
-    ctx.strokeStyle = 'rgba(246,222,150,.5)';
-    ctx.lineWidth = 1.4;
+    ctx.strokeStyle = 'rgba(246,222,150,.6)';
+    ctx.lineWidth = 2;
     ctx.stroke();
-    const wob = Math.sin(t / 260 + s) * 6;
+    /* 飘须 */
+    const wob = Math.sin(t / 260 + s) * 9;
     ctx.beginPath();
-    ctx.moveTo(hd.x + Math.cos(ha) * 6 + px * 2 * s, hd.y + Math.sin(ha) * 6 + py * 2 * s);
+    ctx.moveTo(hd.x + Math.cos(ha) * 9 + px * 3 * s, hd.y + Math.sin(ha) * 9 + py * 3 * s);
     ctx.quadraticCurveTo(
-      hd.x + Math.cos(ha) * 20 + px * (8 * s + wob * .3), hd.y + Math.sin(ha) * 20 + py * (8 * s + wob * .3),
-      hd.x + Math.cos(ha) * 30 + px * (14 * s + wob), hd.y + Math.sin(ha) * 30 + py * (14 * s + wob)
+      hd.x + Math.cos(ha) * 30 + px * (12 * s + wob * .3), hd.y + Math.sin(ha) * 30 + py * (12 * s + wob * .3),
+      hd.x + Math.cos(ha) * 46 + px * (22 * s + wob), hd.y + Math.sin(ha) * 46 + py * (22 * s + wob)
     );
-    ctx.strokeStyle = 'rgba(240,214,150,.35)';
-    ctx.lineWidth = .8;
+    ctx.strokeStyle = 'rgba(240,214,150,.4)';
+    ctx.lineWidth = 1.1;
     ctx.stroke();
   }
 }
