@@ -426,6 +426,17 @@ function release(effect){
       case 'ocean':   p.kind = 'bubble'; p.vx = 0; p.vy = rand(-2.2, -.9); p.color = '180,220,245'; p.decay = 0; break;
       case 'thunder': p.kind = 'mote';  p.vx = rand(-.3, .3); p.vy = rand(.2, .8); p.color = '118,124,148'; break;
       case 'wind':    p.kind = 'wind';  p.vx = rand(3, 7); p.vy = 0; p.color = '205,205,195'; p.decay = 0; break;
+      case 'heart': {
+        /* 字聚为心——粒子化作一颗心，搏动片刻后散去 */
+        p.kind = 'scale'; p.mode = 'seek';
+        const a = Math.random() * Math.PI * 2, fill = Math.sqrt(Math.random());
+        const s = Math.min(W, H) * .011 * fill;
+        p.tx = W * .5 + 16 * Math.pow(Math.sin(a), 3) * s;
+        p.ty = H * .4 - (13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)) * s;
+        p.color = pick(['252,214,200','238,160,170','246,196,180']);
+        p.decay = 0; p.life = 1;
+        break;
+      }
       case 'moon': {
         /* 字聚为月——粒子化作满月，片刻后散去，月华常驻 */
         p.kind = 'scale'; p.mode = 'seek';
@@ -632,6 +643,17 @@ const emitters = {
       spawn({ x: rand(0, W), y: H + 6, vx: rand(-.2, .2), vy: rand(-.5, -.2), mode: 'fx', kind: 'mote', decay: .002, life: 1, size: rand(.8, 1.4), color: '230,236,250', alpha: rand(.25, .55) });
     if (frame % 300 === 0 && Math.random() < .6)
       spawn({ x: rand(W * .1, W * .9), y: rand(0, H * .3), vx: rand(6, 10) * (Math.random() < .5 ? 1 : -1), vy: rand(1.5, 3), mode: 'fx', kind: 'shoot', decay: .008, life: 1, size: rand(1.2, 1.8), color: '230,236,250', alpha: 1 });
+  },
+  heart(){
+    /* 玫瑰光尘 */
+    if (frame % 4 === 0)
+      spawn({ x: rand(0, W), y: rand(0, H * .7), vx: rand(-.15, .15), vy: rand(-.06, .06), mode: 'fx', kind: 'mote', decay: .0015, life: 1, size: rand(.8, 2), color: pick(['238,160,170','246,200,180','240,214,180']), alpha: rand(.25, .55) });
+    /* 心尖升起的小心愿 */
+    if (frame % 26 === 0)
+      spawn({ x: W * .5 + rand(-90, 90), y: H * .52, vx: rand(-.2, .2), vy: rand(-.9, -.4), mode: 'fx', kind: 'spark', decay: rand(.004, .008), life: 1, size: rand(1, 2.2), color: pick(['252,214,200','238,160,170']), alpha: rand(.6, 1) });
+    /* 玫瑰花瓣旋落 */
+    if (frame % 9 === 0)
+      spawn({ x: rand(0, W), y: -10, vx: rand(-.4, .4), vy: rand(.4, .9), mode: 'fx', kind: 'pollen', decay: rand(.002, .004), life: 1, size: rand(.9, 1.8), color: pick(['240,170,170','246,196,180']), alpha: rand(.5, .9) });
   },
   cloud(){
     if (clouds.length < 6 && frame % 200 === 0)
@@ -857,6 +879,51 @@ function drawMoon(t){
     ctx.lineWidth = 1;
     ctx.stroke();
   }
+}
+
+/* ================= 心动 ================= */
+function heartPath(cx, cy, s){
+  ctx.beginPath();
+  for (let a = 0; a <= Math.PI * 2 + .01; a += .12){
+    const x = 16 * Math.pow(Math.sin(a), 3);
+    const y = -(13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a));
+    a === 0 ? ctx.moveTo(cx + x * s, cy + y * s) : ctx.lineTo(cx + x * s, cy + y * s);
+  }
+  ctx.closePath();
+}
+function drawHeart(t){
+  const cx = W * .5, cy = H * .4, ink = inkBg;
+  /* lub-dub 双跳节律 */
+  const beat = Math.pow(Math.max(Math.sin(t / 480), 0), 4) + .55 * Math.pow(Math.max(Math.sin(t / 480 - .8), 0), 6);
+  const s = Math.min(W, H) * .011 * (1 + beat * .08);
+  if (!ink){
+    ctx.globalCompositeOperation = 'lighter';
+    const halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, s * 26);
+    halo.addColorStop(0, `rgba(238,150,160,${.1 + beat * .06})`);
+    halo.addColorStop(1, 'rgba(238,150,160,0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(cx - s * 26, cy - s * 26, s * 52, s * 52);
+  }
+  /* 心体 */
+  ctx.globalCompositeOperation = ink ? 'source-over' : 'lighter';
+  const body = ctx.createRadialGradient(cx - s * 5, cy - s * 6, s * 2, cx, cy, s * 17);
+  if (ink){
+    body.addColorStop(0, 'rgba(172,66,58,.4)');
+    body.addColorStop(.6, 'rgba(158,54,48,.28)');
+    body.addColorStop(1, 'rgba(140,46,44,.12)');
+  } else {
+    body.addColorStop(0, 'rgba(250,196,196,.34)');
+    body.addColorStop(.6, 'rgba(238,150,160,.22)');
+    body.addColorStop(1, 'rgba(214,110,130,.1)');
+  }
+  ctx.fillStyle = body;
+  heartPath(cx, cy, s);
+  ctx.fill();
+  /* 心缘 */
+  heartPath(cx, cy, s);
+  ctx.strokeStyle = ink ? `rgba(158,54,48,${.4 + beat * .2})` : `rgba(252,214,200,${.35 + beat * .25})`;
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
 }
 
 /* ================= 云团 ================= */
@@ -1298,6 +1365,7 @@ function tick(t){
   if (has('fire')) drawFlames(t);
   if (has('wind')) drawWindLines(t);
   if (has('moon')) drawMoon(t);
+        if (has('heart')) drawHeart(t);
   if (has('sunglow')) drawSunglow(t);
   if (has('dragon')) drawDragon(t);
   if (inkBg) drawInk(t);
@@ -1492,7 +1560,8 @@ const AudioEngine = {
       g.connect(out);
       level = .04;
       this.ambTimer = setInterval(() => this.twinkle(), 2600);
-    } else if (name === 'dragon'){
+    } else if (name === 'heart'){ const g = G(.5); O('sine', 174.6).connect(g); O('sine', 261.6).connect(g); g.connect(out); level = .045; }
+    else if (name === 'dragon'){
       /* 龙吟：低频双吟 + 风行低通 */
       const f = F('lowpass', 190);
       N().connect(f); f.connect(out);
@@ -1604,10 +1673,10 @@ const laws = { '雨': 'rain', '雪': 'snow', '星': 'stars', '火': 'fire', '海
   '烟': ['fire','wind'], '煙': ['fire','wind'], '炎': 'fire', '焰': 'fire', '光': ['stars','moon'], '夜': ['moon','stars'], '晓': ['sunglow','stars'], '曉': ['sunglow','stars'],
   '春': ['flower','rain'], '夏': ['fire','thunder'], '秋': ['wind','flower'], '冬': ['snow','wind'],
   '龙': 'dragon', '龍': 'dragon', '凤': ['fire','wind'], '鳳': ['fire','wind'], '剑': ['wind','stars'], '劍': ['wind','stars'],
-  '梦': ['moon','flower'], '夢': ['moon','flower'], '心': ['fire','moon'], '爱': ['flower','moon'], '愛': ['flower','moon'],
+  '梦': ['moon','flower'], '夢': ['moon','flower'], '心': 'heart', '恋': 'heart', '戀': 'heart', '情': 'heart', '爱': ['flower','moon'], '愛': ['flower','moon'],
   '酒': ['moon','ocean'], '诗': ['wind','moon'], '詩': ['wind','moon'], '茶': ['flower','cloud'], '禅': ['moon','ink'] };
-const effNames = { rain: '细雨润物', snow: '雪落无声', stars: '星河璀璨', fire: '烈焰焚空', ocean: '沧海横流', thunder: '雷霆万钧', wind: '长风万里', flower: '繁花似锦', moon: '明月照彻', cloud: '云卷云舒', mountain: '远山如黛', sunglow: '霞光漫天', firefly: '流萤飞舞', ink: '墨染江山', dragon: '龙游太虚', world: '森罗万象', void: '万法归尘' };
-const ringColors = { rain: '148,168,205', snow: '236,240,248', stars: '230,220,190', fire: '232,164,80', ocean: '126,176,206', thunder: '200,214,255', wind: '205,205,195', flower: '230,180,150', moon: '214,228,255', cloud: '200,204,214', mountain: '150,168,138', sunglow: '240,168,118', firefly: '190,230,140', ink: '34,32,44', dragon: '222,186,110', world: '230,201,138', void: '233,228,216' };
+const effNames = { rain: '细雨润物', snow: '雪落无声', stars: '星河璀璨', fire: '烈焰焚空', ocean: '沧海横流', thunder: '雷霆万钧', wind: '长风万里', flower: '繁花似锦', moon: '明月照彻', cloud: '云卷云舒', mountain: '远山如黛', sunglow: '霞光漫天', firefly: '流萤飞舞', ink: '墨染江山', dragon: '龙游太虚', heart: '怦然心动', world: '森罗万象', void: '万法归尘' };
+const ringColors = { rain: '148,168,205', snow: '236,240,248', stars: '230,220,190', fire: '232,164,80', ocean: '126,176,206', thunder: '200,214,255', wind: '205,205,195', flower: '230,180,150', moon: '214,228,255', cloud: '200,204,214', mountain: '150,168,138', sunglow: '240,168,118', firefly: '190,230,140', ink: '34,32,44', dragon: '222,186,110', heart: '238,160,170', world: '230,201,138', void: '233,228,216' };
 const fusionNames = { 'fire+wind': '焚天烈焰', 'ocean+stars': '星海倒映', 'snow+wind': '暴风雪', 'flower+wind': '花吹雪', 'rain+snow': '雨雪霏霏', 'fire+stars': '星火燎原', 'rain+thunder': '雷雨交加', 'flower+snow': '花雪同尘', 'ocean+thunder': '怒海惊雷', 'stars+wind': '星河流转', 'flower+stars': '花满星河', 'fire+ocean': '冰火同源', 'rain+stars': '星雨同辉', 'snow+stars': '雪夜星河', 'flower+rain': '花雨纷飞', 'ocean+rain': '江海同潮', 'fire+thunder': '雷火炼狱', 'ocean+wind': '海风怒涛', 'rain+wind': '风雨兼程', 'ocean+snow': '雪落沧海', 'flower+ocean': '海上花田', 'snow+thunder': '雷雪异象', 'stars+thunder': '星雷交响', 'thunder+wind': '风雷激荡', 'fire+snow': '雪火交融', 'flower+thunder': '惊雷绽芳', 'fire+rain': '火雨倾盆', 'fire+flower': '焰舞飞花', 'fire+moon': '烽火月夜', 'flower+moon': '花前月下', 'moon+ocean': '沧海月明', 'moon+rain': '云破月来', 'moon+stars': '星月交辉', 'moon+snow': '雪月同辉', 'moon+thunder': '月涌惊雷', 'moon+wind': '风月无边', 'ink+moon': '禅心墨月' };
 const multiNames = { 3: '三才同辉', 4: '四象汇聚', 5: '五行轮转', 6: '六合归一', 7: '七星连珠' };
 const multiPoems = { 3: '道生一 · 一生二 · 二生三 · 三生万物', 4: '两仪生四象 · 四象生八卦', 5: '五行相生 · 流转不息', 6: '六合之内 · 气象万千', 7: '七星高照 · 天命所归' };
@@ -1807,7 +1876,7 @@ window.addEventListener('scroll', () => {
 }, { passive: true });
 
 /* ================= 诗句旁白 ================= */
-const poems = { rain: '好雨知时节 · 当春乃发生', snow: '晚来天欲雪 · 能饮一杯无', stars: '星垂平野阔 · 月涌大江流', fire: '野火烧不尽 · 春风吹又生', ocean: '海上生明月 · 天涯共此时', thunder: '九州生气恃风雷 · 万马齐喑究可哀', wind: '长风破浪会有时 · 直挂云帆济沧海', flower: '落红不是无情物 · 化作春泥更护土', moon: '明月出天山 · 苍茫云海间', cloud: '行到水穷处 · 坐看云起时', mountain: '相看两不厌 · 只有敬亭山', sunglow: '落霞与孤鹜齐飞 · 秋水共长天一色', firefly: '银烛秋光冷画屏 · 轻罗小扇扑流萤', ink: '挥毫落纸如云烟', dragon: '飞龙在天 · 利见大人', void: '言尽之处 · 万法归尘' };
+const poems = { rain: '好雨知时节 · 当春乃发生', snow: '晚来天欲雪 · 能饮一杯无', stars: '星垂平野阔 · 月涌大江流', fire: '野火烧不尽 · 春风吹又生', ocean: '海上生明月 · 天涯共此时', thunder: '九州生气恃风雷 · 万马齐喑究可哀', wind: '长风破浪会有时 · 直挂云帆济沧海', flower: '落红不是无情物 · 化作春泥更护土', moon: '明月出天山 · 苍茫云海间', cloud: '行到水穷处 · 坐看云起时', mountain: '相看两不厌 · 只有敬亭山', sunglow: '落霞与孤鹜齐飞 · 秋水共长天一色', firefly: '银烛秋光冷画屏 · 轻罗小扇扑流萤', ink: '挥毫落纸如云烟', dragon: '飞龙在天 · 利见大人', heart: '身无彩凤双飞翼 · 心有灵犀一点通', void: '言尽之处 · 万法归尘' };
 const poemEl = document.getElementById('poem');
 let poemTimer = null;
 const fusionPoems = { 'ocean+stars': '醉后不知天在水 · 满船清梦压星河', 'fire+wind': '风助火势 · 火借风威', 'snow+wind': '北风卷地白草折 · 胡天八月即飞雪', 'flower+wind': '夜来风雨声 · 花落知多少', 'rain+thunder': '黑云翻墨未遮山 · 白雨跳珠乱入船', 'fire+stars': '聚是一团火 · 散作满天星', 'rain+snow': '雨雪霏霏 · 行道迟迟', 'moon+ocean': '海上生明月 · 天涯共此时', 'flower+moon': '花间一壶酒 · 独酌无相亲', 'moon+stars': '愿我如星君如月 · 夜夜流光相皎洁' };
