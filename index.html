@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>言出法随 · 世界模型</title>
+<meta name="description" content="世界模型交互体验 —— 言语既出，法则随行。一字既出，世界重构。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23a63d2a'/%3E%3Ctext x='50' y='70' font-size='54' text-anchor='middle' fill='%23f5ead9' font-family='serif'%3E言%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;600;900&family=JetBrains+Mono:wght@300;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#070709;
+  --paper:#e9e4d8;
+  --dim:rgba(233,228,216,.55);
+  --faint:rgba(233,228,216,.3);
+  --gold:#c8a45c;
+  --gold2:#e6c98a;
+  --seal:#a63d2a;
+  --serif:"Noto Serif SC","Songti SC","STSong",serif;
+  --mono:"JetBrains Mono","SF Mono",monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+@media(hover:hover){*{cursor:none!important}}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--paper);font-family:var(--serif);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+::selection{background:var(--gold);color:var(--ink)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- 底层画布与氛围 ---------- */
+#void{position:fixed;inset:0;z-index:0}
+.vignette{position:fixed;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 50%,rgba(0,0,0,.62) 100%)}
+#flash{position:fixed;inset:0;z-index:45;pointer-events:none;background:#dfe8ff;opacity:0;transition:opacity .5s ease}
+.grain{position:fixed;inset:-60%;z-index:50;pointer-events:none;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");animation:grain 7s steps(8) infinite}
+@keyframes grain{0%{transform:translate(0,0)}25%{transform:translate(-4%,3%)}50%{transform:translate(3%,-4%)}75%{transform:translate(-3%,-2%)}100%{transform:translate(0,0)}}
+#progress{position:fixed;top:0;left:0;height:2px;width:0;z-index:46;background:linear-gradient(90deg,var(--gold),var(--gold2));box-shadow:0 0 12px rgba(200,164,92,.6)}
+
+/* ---------- 自定义光标 ---------- */
+.cursor-dot,.cursor-ring{position:fixed;top:0;left:0;z-index:100;pointer-events:none;border-radius:50%}
+.cursor-dot{width:6px;height:6px;background:var(--gold2)}
+.cursor-ring{width:38px;height:38px;border:1px solid rgba(200,164,92,.55);transition:width .35s,height .35s,border-color .35s,background .35s}
+.cursor-ring.hovering{width:64px;height:64px;border-color:rgba(230,201,138,.9);background:rgba(200,164,92,.06)}
+@media(hover:none){.cursor-dot,.cursor-ring{display:none}}
+
+/* ---------- 导航 ---------- */
+nav{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;align-items:center;justify-content:space-between;padding:16px 4vw;background:rgba(7,7,9,.42);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(233,228,216,.06)}
+.brand{display:flex;align-items:center;gap:14px}
+.seal{width:42px;height:42px;background:var(--seal);color:#f5ead9;display:grid;grid-template-columns:1fr 1fr;place-items:center;font-size:14px;font-weight:600;line-height:1;padding:5px;border-radius:5px;transform:rotate(-4deg);box-shadow:0 0 26px rgba(166,61,42,.4)}
+.brand-text{display:flex;flex-direction:column;gap:3px;font-size:15px;letter-spacing:.35em}
+.brand-text small{font-family:var(--mono);font-size:9px;letter-spacing:.42em;color:var(--gold)}
+.links{display:flex;gap:34px}
+.links a{color:var(--dim);text-decoration:none;font-size:13px;letter-spacing:.3em;position:relative;padding:4px 0;transition:color .3s}
+.links a:hover{color:var(--gold2)}
+.links a::after{content:'';position:absolute;left:0;bottom:0;width:100%;height:1px;background:var(--gold);transform:scaleX(0);transform-origin:right;transition:transform .45s cubic-bezier(.22,1,.36,1)}
+.links a:hover::after{transform:scaleX(1);transform-origin:left}
+
+/* ---------- 通用版式 ---------- */
+main{position:relative;z-index:5}
+section{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14vh 6vw;scroll-margin-top:70px;text-align:center}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.55em;text-transform:uppercase;color:var(--gold)}
+h2{font-size:clamp(32px,4.6vw,58px);font-weight:600;letter-spacing:.14em;margin:22px 0 26px}
+.lead{color:var(--dim);font-size:15px;line-height:2.3;max-width:640px;font-weight:300}
+.reveal{opacity:0;transform:translateY(40px);transition:opacity 1.1s cubic-bezier(.22,1,.36,1),transform 1.1s cubic-bezier(.22,1,.36,1)}
+.reveal.in{opacity:1;transform:translateY(0)}
+.fade-in{opacity:0;animation:fadeIn 1.8s ease forwards}
+@keyframes fadeIn{to{opacity:1}}
+
+/* ---------- 序章 ---------- */
+#hero .eyebrow{position:absolute;top:15vh;left:50%;transform:translateX(-50%);animation-delay:.4s}
+.hero-sub{position:absolute;bottom:19vh;left:50%;transform:translateX(-50%);width:100%;padding:0 6vw;color:var(--dim);letter-spacing:.35em;font-size:clamp(13px,1.4vw,17px);font-weight:300;animation-delay:1.4s}
+.scroll-hint{position:absolute;bottom:6vh;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;letter-spacing:.4em;color:var(--faint);animation-delay:2.2s}
+.scroll-hint i{display:block;width:1px;height:52px;background:rgba(233,228,216,.15);margin:12px auto 0;position:relative;overflow:hidden}
+.scroll-hint i::after{content:'';position:absolute;left:0;top:-45%;width:100%;height:45%;background:var(--gold2);animation:drop 2.2s cubic-bezier(.65,0,.35,1) infinite}
+@keyframes drop{to{top:115%}}
+.side{position:absolute;top:50%;transform:translateY(-50%);writing-mode:vertical-rl;letter-spacing:.7em;font-size:13px;color:var(--faint);font-weight:300;animation-delay:1s}
+.side.left{left:4.5vw}
+.side.right{right:4.5vw}
+.halo{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none}
+.halo.h1{width:min(560px,80vw);height:min(560px,80vw);border:1px solid rgba(200,164,92,.14);animation:spin 50s linear infinite}
+.halo.h2{width:min(720px,96vw);height:min(720px,96vw);border:1px dashed rgba(200,164,92,.1);animation:spin 80s linear infinite reverse}
+@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+
+/* ---------- 第一章 · 法则 ---------- */
+#law{justify-content:flex-start;padding-top:15vh}
+#law .cmd{margin-top:auto;padding-bottom:8vh;display:flex;flex-direction:column;align-items:center;gap:32px}
+.cmd-input{background:transparent;border:none;border-bottom:1px solid rgba(200,164,92,.3);color:var(--paper);font-family:var(--serif);font-weight:600;font-size:clamp(24px,3.2vw,38px);letter-spacing:.2em;text-align:center;padding:10px 6px;width:min(440px,82vw);outline:none;transition:border-color .4s,box-shadow .4s}
+.cmd-input::placeholder{color:rgba(233,228,216,.25);font-weight:300;letter-spacing:.1em}
+.cmd-input:focus{border-color:var(--gold2);box-shadow:0 18px 30px -22px rgba(200,164,92,.35)}
+.chips{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.chip{width:56px;height:56px;border-radius:50%;border:1px solid rgba(233,228,216,.16);background:rgba(233,228,216,.03);color:var(--paper);font-family:var(--serif);font-size:20px;display:grid;place-items:center;transition:all .35s cubic-bezier(.22,1,.36,1)}
+.chip:hover,.chip.active{border-color:var(--gold);color:var(--gold2);transform:translateY(-5px);box-shadow:0 12px 30px -10px rgba(200,164,92,.35)}
+.status{font-family:var(--mono);font-size:12px;letter-spacing:.25em;color:var(--gold);min-height:1.2em}
+.status .prompt{color:var(--faint)}
+.caret{animation:blink 1.1s steps(1) infinite;color:var(--gold2)}
+@keyframes blink{50%{opacity:0}}
+
+/* ---------- 诗句旁白 ---------- */
+#poem{position:fixed;left:50%;top:13vh;transform:translateX(-50%) translateY(-12px);z-index:6;pointer-events:none;font-size:clamp(15px,1.8vw,21px);letter-spacing:.4em;color:rgba(233,228,216,.85);text-shadow:0 0 24px rgba(200,164,92,.35);opacity:0;transition:opacity 1.4s ease,transform 1.4s ease;font-weight:300;white-space:nowrap}
+#poem.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- 背景大字 ---------- */
+#bgChar{position:fixed;right:3.2vw;top:50%;transform:translateY(-50%);z-index:6;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:14px;opacity:0;transition:opacity 1.8s ease;user-select:none}
+#bgChar.show{opacity:1}
+#bgCharName{writing-mode:vertical-rl;font-size:15px;letter-spacing:.55em;color:rgba(233,228,216,.42)}
+#bgCharSeal{width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:rgba(178,58,48,.5);color:rgba(255,246,238,.88);font-size:15px;border-radius:4px;transform:rotate(-3deg);box-shadow:0 0 14px rgba(178,58,48,.22)}
+.sound-toggle,.auto-play{font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--dim);background:transparent;border:1px solid rgba(233,228,216,.14);padding:8px 18px;border-radius:999px;transition:all .3s}
+.sound-toggle:hover,.auto-play:hover{color:var(--gold2);border-color:var(--gold)}
+.auto-play.on{color:var(--gold2);border-color:var(--gold);box-shadow:0 0 20px rgba(200,164,92,.2)}
+.chip-mode{display:flex;gap:10px;justify-content:center;margin-bottom:22px}
+.mode-btn{font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--dim);background:transparent;border:1px solid rgba(233,228,216,.14);padding:7px 20px;border-radius:999px;transition:all .3s}
+.mode-btn:hover{color:var(--gold2);border-color:var(--gold)}
+.mode-btn.on{color:var(--gold2);border-color:var(--gold);box-shadow:0 0 18px rgba(200,164,92,.18)}
+
+/* ---------- 第二章 · 万象 ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;width:min(1240px,92vw);margin-top:7vh}
+.card{position:relative;text-align:left;padding:52px 34px 44px;background:rgba(12,12,17,.55);border:1px solid rgba(233,228,216,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow:hidden;transition:transform .5s cubic-bezier(.22,1,.36,1),border-color .5s}
+.card::before{content:'';position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);transform:scaleX(0);transition:transform .6s cubic-bezier(.22,1,.36,1)}
+.card:hover{transform:translateY(-8px);border-color:rgba(200,164,92,.35)}
+.card:hover::before{transform:scaleX(1)}
+.card .num{font-size:56px;font-weight:300;color:transparent;-webkit-text-stroke:1px rgba(200,164,92,.55);letter-spacing:.1em}
+.card h3{font-size:26px;letter-spacing:.35em;margin:26px 0 6px;font-weight:600}
+.card .en{font-family:var(--mono);font-size:10px;letter-spacing:.4em;color:var(--gold);text-transform:uppercase}
+.card p{margin-top:20px;color:var(--dim);font-size:13.5px;line-height:2.1;font-weight:300}
+
+/* ---------- 第三章 · 推演 ---------- */
+.flow{display:flex;align-items:flex-start;justify-content:center;width:min(1240px,92vw);margin-top:9vh}
+.step{flex:0 0 200px;display:flex;flex-direction:column;align-items:center;gap:20px}
+.step .glyph{width:84px;height:84px;border-radius:50%;border:1px solid rgba(200,164,92,.4);display:grid;place-items:center;font-size:32px;color:var(--gold2);background:rgba(200,164,92,.05);box-shadow:inset 0 0 40px rgba(200,164,92,.08)}
+.step h4{font-size:17px;letter-spacing:.4em;font-weight:600}
+.step p{color:var(--dim);font-size:12.5px;line-height:2;max-width:190px;font-weight:300}
+.connector{flex:1;height:1px;margin-top:42px;background:linear-gradient(90deg,transparent,rgba(200,164,92,.7),transparent);background-size:200% 100%;animation:flowline 2.8s linear infinite}
+@keyframes flowline{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ---------- 尾声 ---------- */
+#finale h2{font-size:clamp(38px,6.4vw,92px);letter-spacing:.16em;background:linear-gradient(115deg,var(--paper) 20%,var(--gold2) 50%,var(--paper) 80%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sheen 6s ease-in-out infinite}
+@keyframes sheen{0%,100%{background-position:0% 0}50%{background-position:100% 0}}
+footer{margin-top:12vh;display:flex;flex-direction:column;gap:14px;align-items:center;color:var(--faint);font-family:var(--mono);font-size:10px;letter-spacing:.35em}
+footer .line{width:60px;height:1px;background:rgba(200,164,92,.4)}
+
+@media(max-width:900px){
+  .links{display:none}
+  .side{display:none}
+  .flow{flex-direction:column;align-items:center;gap:40px}
+  .connector{display:none}
+  #hero .eyebrow{top:12vh}
+}
+</style>
+</head>
+<body>
+
+<canvas id="void"></canvas>
+<div class="vignette"></div>
+<div id="flash"></div>
+<div class="grain"></div>
+<div id="progress"></div>
+<div id="poem"></div>
+<div id="bgChar"><span id="bgCharName"></span><span id="bgCharSeal"></span></div>
+<div class="cursor-dot" id="cdot"></div>
+<div class="cursor-ring" id="cring"></div>
+
+<nav>
+  <div class="brand">
+    <div class="seal"><span>言</span><span>出</span><span>法</span><span>随</span></div>
+    <div class="brand-text">言出法随<small>WORLD MODEL</small></div>
+  </div>
+  <div class="links">
+    <a href="#hero">序章</a>
+    <a href="#law">法则</a>
+    <a href="#wanxiang">万象</a>
+    <a href="#tuiyan">推演</a>
+    <a href="#finale">尾声</a>
+    <button id="soundToggle" class="sound-toggle">音 · 开</button>
+    <button id="shotBtn" class="sound-toggle">留影</button>
+  </div>
+</nav>
+
+<main>
+
+  <!-- 序章 -->
+  <section id="hero">
+    <div class="halo h1"></div>
+    <div class="halo h2"></div>
+    <span class="side left fade-in">言語即法則</span>
+    <span class="side right fade-in">世界為你重構</span>
+    <p class="eyebrow fade-in">World Model · 世界模型</p>
+    <h1 class="sr-only">言出法随</h1>
+    <p class="hero-sub fade-in">言语既出，法则随行。意念所至，万象更生。</p>
+    <div class="scroll-hint fade-in"><span>向下滚动 · 开启法则</span><i></i></div>
+  </section>
+
+  <!-- 第一章 · 言出法随 -->
+  <section id="law">
+    <p class="eyebrow reveal">第一章 · 言出法随</p>
+    <h2 class="reveal">一字既出，世界重构</h2>
+    <p class="lead reveal">在下方落任意一字，或点选法则。字符将自虚无中凝聚成形，而后化作真实的天地现象 —— 这，便是世界模型的「言出法随」。</p>
+    <div class="cmd">
+      <input id="cmdInput" class="cmd-input reveal" maxlength="4" placeholder="在此落字，而后回车" autocomplete="off">
+      <div class="chip-mode reveal">
+      <button id="modeSingle" class="mode-btn on">单法</button>
+      <button id="modeFusion" class="mode-btn">融合</button>
+      </div>
+      <div class="chips reveal">
+        <button class="chip" data-law="雨">雨</button>
+        <button class="chip" data-law="雪">雪</button>
+        <button class="chip" data-law="星">星</button>
+        <button class="chip" data-law="火">火</button>
+        <button class="chip" data-law="花">花</button>
+        <button class="chip" data-law="风">风</button>
+        <button class="chip" data-law="海">海</button>
+        <button class="chip" data-law="雷">雷</button>
+      </div>
+      <p class="status reveal"><span class="prompt">&gt;&nbsp;</span><span id="statusText">静待法旨</span><span class="caret">_</span></p>
+      <button id="autoPlay" class="auto-play reveal">自动演绎 · 关</button>
+    </div>
+  </section>
+
+  <!-- 第二章 · 万象之理 -->
+  <section id="wanxiang">
+    <p class="eyebrow reveal">第二章 · 万象之理</p>
+    <h2 class="reveal">世界模型，何以言出法随</h2>
+    <div class="cards reveal">
+      <div class="card">
+        <div class="num">壹</div>
+        <h3>感知</h3>
+        <div class="en">Perceive</div>
+        <p>观万物之形，察微尘之变。世界模型以多模态感知，纳天地于一心，见人所见，更见人所未见。</p>
+      </div>
+      <div class="card">
+        <div class="num">贰</div>
+        <h3>理解</h3>
+        <div class="en">Understand</div>
+        <p>明因果之序，通物理之则。不止于见，更知其所以然 —— 重力、光影、生灭，皆在心中推演。</p>
+      </div>
+      <div class="card">
+        <div class="num">叁</div>
+        <h3>生成</h3>
+        <div class="en">Generate</div>
+        <p>言出而象生，意动而形现。以语言为笔、以规律为墨，于虚无之中，重构万象。</p>
+      </div>
+      <div class="card">
+        <div class="num">肆</div>
+        <h3>推演</h3>
+        <div class="en">Simulate</div>
+        <p>溯未来之流，演万般可能。未发生之事，皆已在内心世界中，推演千遍。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 第三章 · 推演之序 -->
+  <section id="tuiyan">
+    <p class="eyebrow reveal">第三章 · 推演之序</p>
+    <h2 class="reveal">自一言，至万象</h2>
+    <div class="flow reveal">
+      <div class="step">
+        <div class="glyph">言</div>
+        <h4>法旨</h4>
+        <p>一道言语，自虚无中响起，如律令初颁。</p>
+      </div>
+      <div class="connector"></div>
+      <div class="step">
+        <div class="glyph">解</div>
+        <h4>解构</h4>
+        <p>语义被拆解，意图浮现，世界读懂了你的心。</p>
+      </div>
+      <div class="connector"></div>
+      <div class="step">
+        <div class="glyph">构</div>
+        <h4>推演</h4>
+        <p>世界模型内部，万象开始模拟、碰撞、成形。</p>
+      </div>
+      <div class="connector"></div>
+      <div class="step">
+        <div class="glyph">现</div>
+        <h4>显现</h4>
+        <p>法则落地，现实重构 —— 言出，法随。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 尾声 -->
+  <section id="finale">
+    <p class="eyebrow reveal">尾声</p>
+    <h2 class="reveal">言出法随，境由心生。</h2>
+    <p class="lead reveal">世界模型 · 让每一句话，都成为现实的开端。</p>
+    <footer class="reveal">
+      <span class="line"></span>
+      <span>言出法随 · WORLD MODEL EXPERIENCE</span>
+      <span>以粒子为墨 · 以语言为法</span>
+    </footer>
+  </section>
+
+</main>
+<script>
+(() => {
+'use strict';
+
+/* ================= 画布 ================= */
+const canvas = document.getElementById('void');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0;
+function resize(){
+  const d = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = W * d; canvas.height = H * d;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  ctx.setTransform(d, 0, 0, d, 0, 0);
+}
+window.addEventListener('resize', resize); resize();
+
+/* ================= 粒子系统 ================= */
+const MAX = 3000;
+const P = [];
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[(Math.random() * a.length) | 0];
+
+function spawn(o){
+  if (P.length >= MAX) return null;
+  const p = Object.assign({
+    x: rand(0, W), y: rand(0, H), vx: 0, vy: 0,
+    life: 1, decay: rand(.002, .006), size: rand(.7, 1.8),
+    color: '233,228,216', mode: 'drift', kind: 'mote',
+    tx: 0, ty: 0, seed: Math.random() * 1000,
+    alpha: rand(.3, .9), baseY: 0
+  }, o || {});
+  P.push(p); return p;
+}
+for (let i = 0; i < 150; i++) spawn();
+
+/* ================= 文字采样 → 粒子凝聚 ================= */
+function sampleText(text, size){
+  const off = document.createElement('canvas');
+  const o = off.getContext('2d');
+  o.font = `600 ${size}px "Noto Serif SC", serif`;
+  const tw = o.measureText(text).width;
+  off.width = Math.ceil(tw + size * .6);
+  off.height = Math.ceil(size * 1.5);
+  o.font = `600 ${size}px "Noto Serif SC", serif`;
+  o.fillStyle = '#fff'; o.textAlign = 'center'; o.textBaseline = 'middle';
+  o.fillText(text, off.width / 2, off.height / 2);
+  const img = o.getImageData(0, 0, off.width, off.height).data;
+  const step = Math.max(3, Math.round(size / 46));
+  const pts = [];
+  for (let y = 0; y < off.height; y += step)
+    for (let x = 0; x < off.width; x += step)
+      if (img[(y * off.width + x) * 4 + 3] > 120)
+        pts.push({ x: x - off.width / 2, y: y - off.height / 2 });
+  return pts;
+}
+
+function formText(text, cx, cy, size){
+  const pts = sampleText(text, size);
+  for (let i = pts.length - 1; i > 0; i--){
+    const j = (Math.random() * (i + 1)) | 0;
+    const t = pts[i]; pts[i] = pts[j]; pts[j] = t;
+  }
+  while (P.length < pts.length && P.length < MAX) spawn({ mode: 'drift' });
+  const n = Math.min(pts.length, P.length);
+  for (let i = 0; i < P.length; i++){
+    const p = P[i];
+    if (i < n){
+      p.mode = 'seek'; p.kind = 'glyph';
+      p.tx = cx + pts[i].x; p.ty = cy + pts[i].y;
+      p.life = 1; p.decay = 0;
+      p.size = rand(1, 2); p.color = '233,228,216'; p.alpha = rand(.7, 1);
+    } else {
+      p.mode = 'fade'; p.decay = rand(.015, .04);
+    }
+  }
+}
+
+/* ================= 字化为象 ================= */
+function release(effect){
+  const effs = effect === 'world'
+    ? ['rain', 'snow', 'stars', 'fire', 'ocean', 'thunder', 'wind', 'flower']
+    : (Array.isArray(effect) ? effect : [effect]);
+  let ri = 0;
+  for (const p of P){
+    p.mode = 'fx'; p.life = rand(.4, 1); p.decay = rand(.004, .012);
+    switch (effs[ri++ % effs.length]){
+      case 'rain':    p.kind = 'rain';  p.vx = rand(-.6, -.3); p.vy = rand(8, 13);  p.color = '148,168,205'; p.decay = 0; break;
+      case 'snow':    p.kind = 'snow';  p.vx = rand(-.3, .3);  p.vy = rand(.5, 1.4); p.color = '236,240,248'; break;
+      case 'stars':
+        p.kind = 'star'; p.mode = 'seek';
+        p.tx = rand(0, W); p.ty = rand(0, H * .92);
+        p.color = pick(['233,228,216','230,220,190','200,214,235','255,244,214']);
+        p.decay = 0; p.life = 1;
+        break;
+      case 'fire':    p.kind = 'fire';  p.vx = rand(-1, 1); p.vy = rand(-4, -1.5); p.color = pick(['232,164,80','224,120,58','242,202,120']); break;
+      case 'ocean':   p.kind = 'bubble'; p.vx = 0; p.vy = rand(-2.2, -.9); p.color = '180,220,245'; p.decay = 0; break;
+      case 'thunder': p.kind = 'mote';  p.vx = rand(-.3, .3); p.vy = rand(.2, .8); p.color = '118,124,148'; break;
+      case 'wind':    p.kind = 'wind';  p.vx = rand(3, 7); p.vy = 0; p.color = '205,205,195'; p.decay = 0; break;
+      case 'moon':    p.kind = 'mote';  p.vx = rand(-.15, .15); p.vy = rand(-.12, .12); p.color = '214,228,255'; break;
+      case 'flower': {
+        p.kind = 'petal';
+        const a = rand(0, Math.PI * 2), s = rand(1, 4);
+        p.vx = Math.cos(a) * s; p.vy = Math.sin(a) * s;
+        p.color = pick(['222,150,130','230,180,150','200,164,92','230,201,138']);
+        break;
+      }
+      default: p.kind = 'mote'; p.vx = rand(-.3, .3); p.vy = rand(-.3, .3); p.color = '233,228,216';
+    }
+  }
+}
+
+/* ================= 冲击波环 / 涟漪 ================= */
+const rings = [];
+function spawnRing(x, y, maxR, color, life, ellipse){
+  rings.push({ x, y, r: 2, maxR, color, life: life || 1, decay: .02, ellipse: ellipse || 0 });
+}
+
+/* ================= 雷霆 ================= */
+const bolts = [];
+const flashEl = document.getElementById('flash');
+function spawnBolt(){
+  const pts = [];
+  let x = rand(W * .15, W * .85), y = -8;
+  pts.push({ x, y });
+  const end = H * rand(.5, .78);
+  while (y < end){ x += rand(-34, 34); y += rand(16, 42); pts.push({ x, y }); }
+  const bolt = { pts, life: 1, branches: [] };
+  const nb = 1 + (Math.random() * 3 | 0);
+  for (let i = 0; i < nb; i++){
+    const at = pts[(rand(.3, .8) * pts.length) | 0];
+    const bp = [{ x: at.x, y: at.y }];
+    let bx = at.x, by = at.y;
+    const bdir = rand(0, Math.PI * 2);
+    for (let s = 0; s < 5; s++){
+      bx += Math.cos(bdir) * rand(8, 34);
+      by += Math.abs(Math.sin(bdir)) * rand(8, 26) + rand(4, 14);
+      bp.push({ x: bx, y: by });
+    }
+    bolt.branches.push(bp);
+  }
+  bolts.push(bolt);
+  shake(7);
+  camPunch = Math.max(camPunch, .035);
+  rotKick = (Math.random() < .5 ? -1 : 1) * .012;
+  AudioEngine.thunderClap();
+  spawnRing(x, end, rand(60, 130), '200,214,255', .9);
+  flashEl.style.opacity = .55;
+  setTimeout(() => { flashEl.style.opacity = .12; }, 60);
+  setTimeout(() => { flashEl.style.opacity = .4; }, 110);
+  setTimeout(() => { flashEl.style.opacity = 0; }, 190);
+}
+
+/* ================= 八大法则发射器 ================= */
+let frame = 0, currentEffect = null;
+let shakeMag = 0;
+function shake(m){ shakeMag = Math.max(shakeMag, m); }
+
+/* ================= 镜头运镜 ================= */
+const cam = { x: 0, y: 0, z: 1.22, tx: 0, ty: 0, tz: 1.015, px: 0, py: 0 };
+let camMode = 'idle';
+let camPunch = 0, rotKick = 0;
+let gravOn = false;
+/* 法则演化：强度随时间积聚 */
+let effectAge = 0;
+const intensity = () => Math.min(1, .35 + effectAge / 900);
+/* 音画共鸣 */
+let lastBeat = 0;
+const beatData = new Uint8Array(32);
+const emitters = {
+  void(){
+    if (P.length < 170) spawn({ mode: 'drift', kind: 'mote', vx: rand(-.15, .15), vy: rand(-.1, .1), decay: 0, life: 1 });
+  },
+  rain(){
+    for (let i = 0; i < 10 * intensity(); i++)
+      spawn({ x: rand(-40, W), y: rand(-30, -4), vx: rand(-.5, -.2), vy: rand(6, 9), mode: 'fx', kind: 'rain', decay: 0, life: 1, size: rand(.5, .9), color: '120,142,180', alpha: rand(.25, .45) });
+    for (let i = 0; i < 9 * intensity(); i++)
+      spawn({ x: rand(-40, W), y: rand(-30, -4), vx: rand(-.8, -.4), vy: rand(11, 16), mode: 'fx', kind: 'rain', decay: 0, life: 1, size: rand(1, 1.7), color: '160,182,218', alpha: rand(.5, .85) });
+    if (frame % 4 === 0)
+      spawn({ x: rand(0, W), y: H - rand(4, 60), vx: rand(-.3, .3), vy: rand(-.12, .12), mode: 'fx', kind: 'mote', decay: rand(.004, .008), life: 1, size: rand(1, 2.4), color: '140,160,190', alpha: rand(.08, .2) });
+  },
+  snow(){
+    const gust = Math.sin(frame / 260) * 1.2;
+    if (frame % 2 === 0){
+      for (let i = 0; i < 2; i++)
+        spawn({ x: rand(-20, W), y: rand(-20, -4), vx: rand(-.2, .2) + gust * .3, vy: rand(.4, .9), mode: 'fx', kind: 'snow', decay: .0016, life: 1, size: rand(.7, 1.6), color: '226,232,244', alpha: rand(.35, .6) });
+      spawn({ x: rand(-20, W), y: rand(-20, -4), vx: rand(-.3, .3) + gust * .5, vy: rand(.8, 1.5), mode: 'fx', kind: 'snow', decay: .0016, life: 1, size: rand(1.4, 2.6), color: '236,240,248', alpha: rand(.55, .9) });
+    }
+    if (frame % 5 === 0)
+      spawn({ x: rand(-20, W), y: rand(-20, -4), vx: rand(-.4, .4) + gust, vy: rand(1.2, 2), mode: 'fx', kind: 'snowBig', decay: .0014, life: 1, size: rand(2.6, 4), color: '245,248,252', alpha: rand(.8, 1) });
+  },
+  stars(){
+    let c = 0, hc = 0;
+    for (const p of P){ if (p.kind === 'star') c++; else if (p.kind === 'heroStar') hc++; }
+    if (c < 380)
+      for (let i = 0; i < 8; i++)
+        spawn({ x: rand(0, W), y: rand(0, H * .92), vx: rand(-.06, .06), vy: rand(-.04, .04), mode: 'fx', kind: 'star', decay: 0, life: 1, size: rand(.6, 2.2), color: pick(['233,228,216','230,220,190','200,214,235','255,244,214']), alpha: rand(.35, 1) });
+    if (hc < 14)
+      spawn({ x: rand(W * .05, W * .95), y: rand(H * .04, H * .8), vx: rand(-.03, .03), vy: rand(-.02, .02), mode: 'fx', kind: 'heroStar', decay: 0, life: 1, size: rand(1.6, 2.6), color: pick(['255,250,235','230,220,190','214,228,255']), alpha: rand(.8, 1), flare: rand(7, 16) });
+    if (frame % 90 === 0 && Math.random() < .6)
+      spawn({ x: rand(W * .15, W * .85), y: rand(0, H * .3), vx: rand(7, 11) * (Math.random() < .5 ? 1 : -1), vy: rand(2, 3.5), mode: 'fx', kind: 'shoot', decay: .009, life: 1, size: rand(1.4, 2), color: '240,236,220', alpha: 1 });
+  },
+  fire(){
+    for (let i = 0; i < 11 * intensity(); i++)
+      spawn({ x: rand(0, W), y: H + 6, vx: rand(-.5, .5), vy: rand(-3.8, -1.4), mode: 'fx', kind: 'fire', decay: rand(.005, .011), life: 1, size: rand(1, 2.8), color: pick(['232,164,80','224,120,58','242,202,120','200,90,50']), alpha: rand(.6, 1) });
+    if (frame % 6 === 0)
+      spawn({ x: rand(W * .2, W * .8), y: H - rand(0, 30), vx: rand(-2.4, 2.4), vy: rand(-6, -3), mode: 'fx', kind: 'spark', decay: rand(.012, .02), life: 1, size: rand(.8, 1.4), color: '255,226,160', alpha: 1 });
+  },
+  ocean(){
+    if (frame % 2 === 0)
+      for (let i = 0; i < 3; i++)
+        spawn({ x: rand(0, W), y: H + 8, vx: 0, vy: rand(-2.2, -1.1), mode: 'fx', kind: 'bubble', decay: 0, life: 1, size: rand(1, 3.6), color: '180,220,245', alpha: rand(.4, .8) });
+    let mc = 0;
+    for (const p of P) if (p.kind === 'msnow') mc++;
+    if (mc < 240)
+      for (let i = 0; i < 2; i++)
+        spawn({ x: rand(0, W), y: rand(0, H), vx: rand(-.15, .15), vy: rand(.05, .25), mode: 'fx', kind: 'msnow', decay: 0, life: 1, size: rand(.5, 1.4), color: '200,220,235', alpha: rand(.15, .4) });
+    if (frame % 420 === 0){
+      const dir = Math.random() < .5 ? 1 : -1;
+      spawn({ x: dir > 0 ? -50 : W + 50, y: rand(H * .3, H * .75), vx: 0, vy: 0, mode: 'fx', kind: 'fish', decay: 0, life: 1, size: rand(10, 22), color: '4,14,24', alpha: rand(.4, .6), dir });
+    }
+  },
+  thunder(){
+    for (let i = 0; i < 3; i++)
+      spawn({ x: rand(0, W), y: rand(-10, H * .5), vx: rand(-.2, .2), vy: rand(.2, .6), mode: 'fx', kind: 'mote', decay: .004, life: 1, size: rand(.8, 1.8), color: '118,124,148', alpha: rand(.3, .6) });
+    for (let i = 0; i < 5; i++)
+      spawn({ x: rand(-40, W), y: rand(-30, -4), vx: rand(-.7, -.3), vy: rand(9, 14), mode: 'fx', kind: 'rain', decay: 0, life: 1, size: rand(.7, 1.2), color: '130,140,170', alpha: rand(.3, .55) });
+    if (frame % 90 === 0 && Math.random() < .8 * intensity()) spawnBolt();
+    if (frame % 240 === 120 && Math.random() < .5) setTimeout(spawnBolt, 220);
+  },
+  wind(){
+    const gust = 1 + Math.sin(frame / 200) * .6;
+    for (let i = 0; i < 4 * gust * intensity(); i++)
+      spawn({ x: -12, y: rand(0, H), vx: rand(4, 8) * gust, vy: 0, mode: 'fx', kind: 'wind', decay: 0, life: 1, size: rand(.8, 1.4), color: '205,205,195', alpha: rand(.25, .6) });
+    if (frame % 7 === 0)
+      spawn({ x: -12, y: rand(H * .1, H * .9), vx: rand(3, 6) * gust, vy: 0, mode: 'fx', kind: 'leaf', decay: 0, life: 1, size: rand(1.6, 2.8), color: pick(['200,164,92','166,140,80','140,150,110']), alpha: rand(.6, 1) });
+  },
+  flower(){
+    if (frame % 30 === 0){
+      const big = (frame % 150 === 0);
+      const cx = rand(W * .15, W * .85), cy = rand(H * .16, H * .68);
+      const n = big ? 64 : 26 + ((Math.random() * 14) | 0);
+      const rose = Math.random() < .5;
+      spawnRing(cx, cy, big ? 90 : 46, rose ? '222,150,130' : '230,201,138', .7);
+      AudioEngine.chime(pick([523.25, 587.33, 659.25, 783.99, 880]));
+      for (let i = 0; i < n; i++){
+        const a = (i / n) * Math.PI * 2 + rand(-.12, .12);
+        const s = rand(1.2, big ? 4.6 : 3);
+        spawn({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s - rand(.2, .7), mode: 'fx', kind: 'petal', decay: rand(.004, .008), life: 1, size: rand(1, 2.2), color: rose ? pick(['222,150,130','230,180,150']) : pick(['200,164,92','230,201,138']), alpha: rand(.7, 1) });
+      }
+      for (let i = 0; i < 8; i++)
+        spawn({ x: cx + rand(-30, 30), y: cy + rand(-30, 30), vx: rand(-.3, .3), vy: rand(-.5, -.1), mode: 'fx', kind: 'pollen', decay: rand(.006, .012), life: 1, size: rand(.6, 1.2), color: '245,230,180', alpha: rand(.5, 1) });
+    }
+  },
+  moon(){
+    if (frame % 3 === 0)
+      spawn({ x: rand(0, W), y: rand(0, H), vx: rand(-.12, .12), vy: rand(-.08, .08), mode: 'fx', kind: 'mote', decay: .001, life: 1, size: rand(.6, 1.7), color: '214,228,255', alpha: rand(.2, .5) });
+    if (frame % 11 === 0)
+      spawn({ x: rand(0, W), y: H + 6, vx: rand(-.2, .2), vy: rand(-.5, -.2), mode: 'fx', kind: 'mote', decay: .002, life: 1, size: rand(.8, 1.4), color: '230,236,250', alpha: rand(.25, .55) });
+    if (frame % 300 === 0 && Math.random() < .6)
+      spawn({ x: rand(W * .1, W * .9), y: rand(0, H * .3), vx: rand(6, 10) * (Math.random() < .5 ? 1 : -1), vy: rand(1.5, 3), mode: 'fx', kind: 'shoot', decay: .008, life: 1, size: rand(1.2, 1.8), color: '230,236,250', alpha: 1 });
+  }
+};
+
+/* ================= 海底沉浸 ================= */
+let waterBg = null;
+function makeWaterBg(){
+  waterBg = document.createElement('canvas');
+  waterBg.width = Math.max(2, W >> 1); waterBg.height = Math.max(2, H >> 1);
+  const n = waterBg.getContext('2d');
+  const g = n.createLinearGradient(0, 0, 0, waterBg.height);
+  g.addColorStop(0, 'rgba(36,86,116,.5)');
+  g.addColorStop(.45, 'rgba(14,44,70,.55)');
+  g.addColorStop(1, 'rgba(4,12,26,.8)');
+  n.fillStyle = g;
+  n.fillRect(0, 0, waterBg.width, waterBg.height);
+}
+function drawUnderwater(t){
+  ctx.globalCompositeOperation = 'source-over';
+  if (waterBg) ctx.drawImage(waterBg, 0, 0, W, H);
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.beginPath();
+  for (let x = 0; x <= W; x += 12){
+    const y = H * .04 + Math.sin(x * .01 + t / 600) * 6 + Math.sin(x * .027 - t / 420) * 3;
+    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = 'rgba(150,210,240,.28)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  for (let l = 0; l < 5; l++){
+    const bx = W * (.12 + l * .19) + Math.sin(t / 2400 + l * 2) * 30;
+    const sway = Math.sin(t / 1600 + l * 1.7) * .06;
+    ctx.save();
+    ctx.translate(bx, 0);
+    ctx.rotate(.22 + sway);
+    const g2 = ctx.createLinearGradient(0, 0, 0, H * .9);
+    g2.addColorStop(0, `rgba(160,215,245,${.07 + .02 * Math.sin(t / 900 + l * 3)})`);
+    g2.addColorStop(1, 'rgba(160,215,245,0)');
+    ctx.fillStyle = g2;
+    ctx.fillRect(-14 - l * 4, -10, 28 + l * 8, H * .9);
+    ctx.restore();
+  }
+}
+
+/* ================= 火焰基座 ================= */
+let fireGlow = null;
+function makeFireGlow(){
+  fireGlow = document.createElement('canvas');
+  fireGlow.width = Math.max(2, W >> 1); fireGlow.height = Math.max(2, H >> 2);
+  const n = fireGlow.getContext('2d');
+  const g = n.createRadialGradient(fireGlow.width / 2, fireGlow.height, 0, fireGlow.width / 2, fireGlow.height, fireGlow.height * 1.4);
+  g.addColorStop(0, 'rgba(224,120,58,.5)');
+  g.addColorStop(.5, 'rgba(200,90,50,.18)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  n.fillStyle = g;
+  n.fillRect(0, 0, fireGlow.width, fireGlow.height);
+}
+function drawFlames(t){
+  ctx.globalCompositeOperation = 'lighter';
+  if (fireGlow) ctx.drawImage(fireGlow, 0, H - (H >> 2), W, H >> 2);
+  for (let l = 0; l < 3; l++){
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    const amp = 60 + l * 46;
+    for (let x = 0; x <= W; x += 14){
+      const y = H - Math.abs(Math.sin(x * .004 + t / (300 + l * 120) + l * 9)) * amp * (.6 + .4 * Math.sin(t / 200 + x * .01 + l));
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(W, H);
+    ctx.closePath();
+    ctx.fillStyle = `rgba(${l === 0 ? '224,120,58' : l === 1 ? '232,164,80' : '242,202,120'},${.05 + l * .02})`;
+    ctx.fill();
+  }
+}
+
+/* ================= 风流线 ================= */
+function drawWindLines(t){
+  ctx.globalCompositeOperation = 'lighter';
+  for (let l = 0; l < 5; l++){
+    ctx.beginPath();
+    const baseY = H * (.12 + l * .19);
+    for (let x = -20; x <= W + 20; x += 16){
+      const y = baseY + Math.sin(x * .005 + t / 500 + l * 2.4) * 26 + Math.sin(x * .013 - t / 340 + l) * 10;
+      x === -20 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = `rgba(205,205,195,${.05 + .03 * Math.abs(Math.sin(t / 900 + l * 1.3))})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+}
+
+/* ================= 明月 ================= */
+function drawMoon(t){
+  const mx2 = W * .76, my2 = H * .24, R = Math.min(W, H) * .15;
+  ctx.globalCompositeOperation = 'lighter';
+  const halo = ctx.createRadialGradient(mx2, my2, R * .4, mx2, my2, R * 3.2);
+  halo.addColorStop(0, `rgba(214,228,255,${.1 + .02 * Math.sin(t / 1400)})`);
+  halo.addColorStop(1, 'rgba(214,228,255,0)');
+  ctx.fillStyle = halo;
+  ctx.fillRect(mx2 - R * 3.2, my2 - R * 3.2, R * 6.4, R * 6.4);
+  const disc = ctx.createRadialGradient(mx2 - R * .3, my2 - R * .3, R * .1, mx2, my2, R);
+  disc.addColorStop(0, 'rgba(240,244,252,.32)');
+  disc.addColorStop(.8, 'rgba(214,228,255,.18)');
+  disc.addColorStop(1, 'rgba(214,228,255,.05)');
+  ctx.fillStyle = disc;
+  ctx.beginPath(); ctx.arc(mx2, my2, R, 0, Math.PI * 2); ctx.fill();
+  const beam = ctx.createLinearGradient(mx2, my2, W * .3, H);
+  beam.addColorStop(0, 'rgba(214,228,255,.045)');
+  beam.addColorStop(1, 'rgba(214,228,255,0)');
+  ctx.fillStyle = beam;
+  ctx.beginPath();
+  ctx.moveTo(mx2 - R * .5, my2 + R * .3);
+  ctx.lineTo(mx2 + R * .5, my2 + R * .3);
+  ctx.lineTo(W * .44, H);
+  ctx.lineTo(W * .16, H);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/* ================= 更新与绘制 ================= */
+function update(p, t){
+  if (gravOn){
+    const gdx = mx - p.x, gdy = my - p.y;
+    const gd2 = gdx * gdx + gdy * gdy;
+    if (gd2 > 400 && gd2 < 67600){
+      const gd = Math.sqrt(gd2), gf = (1 - gd / 260) * 1.1;
+      p.x += (gdx / gd) * gf * 2.2 + (-gdy / gd) * gf * 1.4;
+      p.y += (gdy / gd) * gf * 2.2 + (gdx / gd) * gf * 1.4;
+    }
+  }
+  switch (p.mode){
+    case 'seek':
+      p.vx = (p.vx + (p.tx - p.x) * .018) * .88;
+      p.vy = (p.vy + (p.ty - p.y) * .018) * .88;
+      p.x += p.vx; p.y += p.vy;
+      if (p.kind === 'star' && Math.abs(p.tx - p.x) + Math.abs(p.ty - p.y) < 4){
+        p.mode = 'fx'; p.vx = rand(-.06, .06); p.vy = rand(-.04, .04); p.decay = 0; p.life = 1;
+      }
+      break;
+    case 'drift':
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < -10) p.x = W + 10; if (p.x > W + 10) p.x = -10;
+      if (p.y < -10) p.y = H + 10; if (p.y > H + 10) p.y = -10;
+      break;
+    case 'fade':
+      p.life -= p.decay; p.x += p.vx; p.y += p.vy;
+      break;
+    case 'fx':
+      switch (p.kind){
+        case 'rain':
+          p.x += p.vx; p.y += p.vy;
+          if (p.y > H - 4){
+            p.life = 0;
+            if (Math.random() < .3)
+              for (let i = 0; i < 2; i++)
+                spawn({ x: p.x, y: H - 4, vx: rand(-1, 1), vy: rand(-2, -.5), mode: 'fx', kind: 'splash', decay: rand(.05, .1), life: .6, size: rand(.6, 1.1), color: '148,168,205', alpha: .7 });
+            if (Math.random() < .12) spawnRing(p.x, H - 3, rand(10, 26), '148,168,205', .5, .32);
+          }
+          break;
+        case 'splash': p.vy += .15; p.x += p.vx; p.y += p.vy; p.life -= p.decay; break;
+        case 'snow':   p.x += p.vx + Math.sin(t / 900 + p.seed) * .45; p.y += p.vy; p.life -= p.decay; if (p.y > H + 6) p.life = 0; break;
+        case 'snowBig':p.x += p.vx + Math.sin(t / 700 + p.seed) * .8; p.y += p.vy; p.life -= p.decay; if (p.y > H + 8) p.life = 0; break;
+        case 'spark':  p.vy += .06; p.x += p.vx; p.y += p.vy; p.life -= p.decay; break;
+        case 'leaf':   p.x += p.vx; p.y += Math.sin(p.x * .02 + p.seed) * 2.2 + .4; if (p.x > W + 14) p.life = 0; break;
+        case 'pollen': p.x += p.vx + Math.sin(t / 800 + p.seed) * .3; p.y += p.vy; p.life -= p.decay; break;
+        case 'star':
+        case 'heroStar':
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < -6) p.x = W + 6; if (p.x > W + 6) p.x = -6;
+          if (p.y < -6) p.y = H + 6; if (p.y > H + 6) p.y = -6;
+          break;
+        case 'shoot':  p.x += p.vx; p.y += p.vy; p.life -= p.decay; break;
+        case 'fire':   p.vy *= .995; p.vx += rand(-.09, .09); p.x += p.vx; p.y += p.vy; p.life -= p.decay; break;
+        case 'foam':   p.x += p.vx; p.y = p.baseY + Math.sin(p.x * .01 + t / 650 + p.seed) * 9; p.life -= p.decay; if (p.x > W + 12 || p.x < -14) p.life = 0; break;
+        case 'bubble': p.vy *= 1.002; p.x += Math.sin(t / 500 + p.seed) * .5; p.y += p.vy; if (p.y < H * .07){ p.life = 0; if (Math.random() < .3) spawnRing(p.x, H * .06, rand(6, 14), '180,220,245', .4, .3); } break;
+        case 'msnow':  p.x += p.vx; p.y += p.vy; if (p.x < -6) p.x = W + 6; if (p.x > W + 6) p.x = -6; if (p.y > H + 6) p.y = -6; break;
+        case 'fish':   p.x += (p.dir || 1) * p.size * .055; if ((p.dir || 1) > 0 && p.x > W + 60) p.life = 0; if ((p.dir || 1) < 0 && p.x < -60) p.life = 0; break;
+        case 'burst':  p.vx *= .97; p.vy *= .97; p.x += p.vx; p.y += p.vy; p.life -= p.decay; break;
+        case 'mote':   p.x += p.vx; p.y += p.vy; p.life -= p.decay; break;
+        case 'wind':   p.x += p.vx; p.y += Math.sin(p.x * .008 + p.seed) * 1.4; if (p.x > W + 14) p.life = 0; break;
+        case 'petal':  p.vx *= .965; p.vy *= .965; p.vy += .015; p.x += p.vx; p.y += p.vy; p.life -= p.decay; break;
+        default:       p.x += p.vx; p.y += p.vy; p.life -= p.decay;
+      }
+      break;
+  }
+}
+
+function draw(p, t){
+  let a = p.alpha * Math.max(0, Math.min(1, p.life));
+  if (a <= 0) return;
+  if (p.kind === 'star' || p.kind === 'heroStar' || (p.kind === 'mote' && p.mode === 'drift'))
+    a *= .3 + .7 * Math.abs(Math.sin(t / (320 + p.seed % 520) + p.seed));
+  let dx = 0, dy = 0;
+  if (p.mode === 'seek' && p.kind !== 'star'){ dx = Math.sin(t / 700 + p.seed) * .7; dy = Math.cos(t / 800 + p.seed) * .7; }
+  const glow = (p.kind === 'fire' || p.kind === 'petal' || p.kind === 'star' || p.kind === 'heroStar' || p.kind === 'shoot' || p.kind === 'foam' || p.kind === 'spark' || p.kind === 'pollen' || p.kind === 'snowBig' || p.kind === 'burst' || p.kind === 'bubble');
+  ctx.globalCompositeOperation = glow ? 'lighter' : 'source-over';
+  if (p.kind === 'heroStar'){
+    const fl = p.flare * (.65 + .35 * Math.sin(t / 760 + p.seed));
+    ctx.strokeStyle = `rgba(${p.color},${a * .45})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(p.x - fl, p.y); ctx.lineTo(p.x + fl, p.y);
+    ctx.moveTo(p.x, p.y - fl); ctx.lineTo(p.x, p.y + fl);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(255,255,255,${a})`;
+    ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+  } else if (p.kind === 'shoot'){
+    for (let s = 0; s < 6; s++){
+      ctx.strokeStyle = `rgba(${p.color},${a * (1 - s / 6) * .85})`;
+      ctx.lineWidth = p.size * (1 - s * .12);
+      ctx.beginPath();
+      ctx.moveTo(p.x - p.vx * s * 1.3, p.y - p.vy * s * 1.3);
+      ctx.lineTo(p.x - p.vx * (s + 1) * 1.3, p.y - p.vy * (s + 1) * 1.3);
+      ctx.stroke();
+    }
+    ctx.fillStyle = `rgba(255,255,255,${a})`;
+    ctx.fillRect(p.x - 1.2, p.y - 1.2, 2.4, 2.4);
+  } else if (p.kind === 'snowBig'){
+    const r = p.size;
+    ctx.strokeStyle = `rgba(${p.color},${a * .9})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(p.x - r, p.y); ctx.lineTo(p.x + r, p.y);
+    ctx.moveTo(p.x, p.y - r); ctx.lineTo(p.x, p.y + r);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(255,255,255,${a})`;
+    ctx.fillRect(p.x - .8, p.y - .8, 1.6, 1.6);
+  } else if (p.kind === 'leaf'){
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(Math.sin(t / 300 + p.seed) * 1.2);
+    ctx.fillStyle = `rgba(${p.color},${a})`;
+    ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+    ctx.restore();
+  } else if (p.kind === 'spark'){
+    ctx.strokeStyle = `rgba(${p.color},${a})`;
+    ctx.lineWidth = p.size;
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    ctx.lineTo(p.x - p.vx * 2, p.y - p.vy * 2);
+    ctx.stroke();
+  } else if (p.kind === 'bubble'){
+    ctx.strokeStyle = `rgba(${p.color},${a * .7})`;
+    ctx.lineWidth = .8;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(255,255,255,${a * .8})`;
+    ctx.fillRect(p.x - p.size * .4, p.y - p.size * .5, 1, 1);
+  } else if (p.kind === 'fish'){
+    const d = p.dir || 1;
+    const w = Math.sin(t / 180 + p.seed) * p.size * .18;
+    ctx.fillStyle = `rgba(${p.color},${a})`;
+    ctx.beginPath();
+    ctx.ellipse(p.x, p.y, p.size, p.size * .32, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    const tx = p.x - d * p.size;
+    ctx.moveTo(tx, p.y);
+    ctx.lineTo(tx - d * p.size * .5 + w, p.y - p.size * .3);
+    ctx.lineTo(tx - d * p.size * .5 + w, p.y + p.size * .3);
+    ctx.closePath();
+    ctx.fill();
+  } else if (p.kind === 'rain' || p.kind === 'wind'){
+    const k = p.kind === 'wind' ? 3 : 2.2;
+    ctx.strokeStyle = `rgba(${p.color},${a})`;
+    ctx.lineWidth = p.size;
+    ctx.beginPath();
+    ctx.moveTo(p.x + dx, p.y + dy);
+    ctx.lineTo(p.x - p.vx * k, p.y - p.vy * k);
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = `rgba(${p.color},${a})`;
+    ctx.fillRect(p.x + dx, p.y + dy, p.size, p.size);
+  }
+}
+
+function tick(t){
+  frame++;
+  effectAge++;
+  /* 运镜更新 */
+  if (camMode === 'push'){
+    cam.tx = 0; cam.ty = 8;
+  } else {
+    cam.tz = 1.015 + Math.sin(t / 3600) * .012;
+    cam.tx = cam.px * -26 + Math.sin(t / 5200) * 10;
+    cam.ty = cam.py * -18 + Math.cos(t / 6100) * 7;
+  }
+  cam.x += (cam.tx - cam.x) * .045;
+  cam.y += (cam.ty - cam.y) * .045;
+  cam.z += (cam.tz - cam.z) * .03;
+  camPunch *= .85;
+  rotKick *= .9;
+  if (AudioEngine.analyser && AudioEngine.enabled){
+    AudioEngine.analyser.getByteFrequencyData(beatData);
+    let bass = 0;
+    for (let i = 0; i < 6; i++) bass += beatData[i];
+    if (bass / 1530 > .6 && frame - lastBeat > 24){ lastBeat = frame; camPunch += .012; }
+  }
+  const shX = shakeMag > .3 ? rand(-shakeMag, shakeMag) : 0;
+  const shY = shakeMag > .3 ? rand(-shakeMag, shakeMag) : 0;
+  if (shakeMag > .3) shakeMag *= .88;
+
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.save();
+  ctx.translate(W / 2 + cam.x + shX, H / 2 + cam.y + shY);
+  ctx.rotate(Math.sin(t / 6800) * .004 + rotKick);
+  ctx.scale(cam.z + camPunch, cam.z + camPunch);
+  ctx.translate(-W / 2, -H / 2);
+  ctx.fillStyle = 'rgba(7,7,9,.34)';
+  ctx.fillRect(-W * .2, -H * .2, W * 1.4, H * 1.4);
+
+  const has = e => currentEffect === 'world' || (Array.isArray(currentEffect) ? currentEffect.includes(e) : currentEffect === e);
+  if (currentEffect === 'world'){
+    if (frame % 2 === 0){ emitters.rain(t); emitters.snow(t); emitters.fire(t); emitters.wind(t); emitters.flower(t); }
+    else emitters.ocean(t);
+    emitters.stars(t);
+    if (frame % 3 === 0) emitters.thunder(t);
+  } else if (Array.isArray(currentEffect)){
+    currentEffect.forEach((e, i) => {
+      if (currentEffect.length <= 3 || (frame + i) % 2 === 0) emitters[e] && emitters[e](t);
+    });
+  } else if (currentEffect && emitters[currentEffect]) emitters[currentEffect](t);
+  if (has('ocean')) drawUnderwater(t);
+  if (has('fire')) drawFlames(t);
+  if (has('wind')) drawWindLines(t);
+  if (has('moon')) drawMoon(t);
+  if (has('stars') && nebula){
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(nebula, 0, 0, W, H);
+  }
+
+  if (rings.length){
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = rings.length - 1; i >= 0; i--){
+      const r = rings[i];
+      r.r += (r.maxR - r.r) * .12; r.life -= r.decay;
+      if (r.life <= 0){ rings.splice(i, 1); continue; }
+      ctx.beginPath();
+      if (r.ellipse) ctx.ellipse(r.x, r.y, r.r, r.r * r.ellipse, 0, 0, Math.PI * 2);
+      else ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(${r.color},${r.life * .5})`;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
+  }
+
+  if (bolts.length){
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = bolts.length - 1; i >= 0; i--){
+      const b = bolts[i]; b.life -= .055;
+      if (b.life <= 0){ bolts.splice(i, 1); continue; }
+      ctx.beginPath();
+      b.pts.forEach((pt, j) => j ? ctx.lineTo(pt.x, pt.y) : ctx.moveTo(pt.x, pt.y));
+      ctx.strokeStyle = `rgba(180,200,255,${b.life * .3})`;
+      ctx.lineWidth = 6; ctx.stroke();
+      ctx.strokeStyle = `rgba(226,236,255,${b.life})`;
+      ctx.lineWidth = 1.8; ctx.stroke();
+      for (const bp of b.branches){
+        ctx.beginPath();
+        bp.forEach((pt, j) => j ? ctx.lineTo(pt.x, pt.y) : ctx.moveTo(pt.x, pt.y));
+        ctx.strokeStyle = `rgba(200,216,255,${b.life * .55})`;
+        ctx.lineWidth = 1; ctx.stroke();
+      }
+    }
+  }
+
+  for (let i = P.length - 1; i >= 0; i--){
+    const p = P[i];
+    update(p, t);
+    if (p.life <= 0){ P.splice(i, 1); continue; }
+    draw(p, t);
+  }
+  ctx.restore();
+  if (gravOn){
+    const pr = 26 + Math.sin(t / 160) * 6;
+    ctx.beginPath();
+    ctx.arc(mx, my, pr, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(230,201,138,.5)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(mx, my, pr * .45, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(230,201,138,.3)';
+    ctx.stroke();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+/* ================= 星河星云底图（逐帧复用） ================= */
+let nebula = null;
+function makeNebula(){
+  nebula = document.createElement('canvas');
+  nebula.width = Math.max(2, W >> 1); nebula.height = Math.max(2, H >> 1);
+  const n = nebula.getContext('2d');
+  for (let i = 0; i < 22; i++){
+    const tt = i / 21;
+    const x = (W * (.08 + .84 * tt) + rand(-60, 60)) / 2;
+    const y = (H * (.78 - .56 * tt) + rand(-46, 46)) / 2;
+    const r = rand(70, 190) / 2;
+    const g = n.createRadialGradient(x, y, 0, x, y, r);
+    const hue = pick(['200,214,235','230,220,190','182,200,244','222,198,232']);
+    g.addColorStop(0, `rgba(${hue},.07)`);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    n.fillStyle = g;
+    n.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+}
+makeNebula();
+window.addEventListener('resize', makeNebula);
+makeFireGlow();
+window.addEventListener('resize', makeFireGlow);
+makeWaterBg();
+window.addEventListener('resize', makeWaterBg);
+
+/* ================= 音景（程序化音频） ================= */
+const AudioEngine = {
+  ctx: null, master: null, ambGain: null, ambNodes: [], ambTimer: null, enabled: true, noiseBuf: null, analyser: null,
+  init(){
+    if (this.ctx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    this.ctx = new AC();
+    this.master = this.ctx.createGain();
+    this.master.gain.value = .5;
+    this.master.connect(this.ctx.destination);
+    this.analyser = this.ctx.createAnalyser();
+    this.analyser.fftSize = 64;
+    this.master.connect(this.analyser);
+    this.ambGain = this.ctx.createGain();
+    this.ambGain.gain.value = 0;
+    this.ambGain.connect(this.master);
+    const len = this.ctx.sampleRate * 2;
+    this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const d = this.noiseBuf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  },
+  noise(){
+    const s = this.ctx.createBufferSource();
+    s.buffer = this.noiseBuf; s.loop = true;
+    return s;
+  },
+  stopAmbient(){
+    if (!this.ctx) return;
+    clearInterval(this.ambTimer); this.ambTimer = null;
+    const t = this.ctx.currentTime, g = this.ambGain;
+    g.gain.cancelScheduledValues(t);
+    g.gain.setValueAtTime(g.gain.value, t);
+    g.gain.linearRampToValueAtTime(0, t + .7);
+    const old = this.ambNodes;
+    setTimeout(() => old.forEach(n => { try { n.stop && n.stop(); } catch(e){} try { n.disconnect(); } catch(e){} }), 800);
+    this.ambNodes = [];
+  },
+  setAmbient(name){
+    if (!this.ctx) return;
+    this.stopAmbient();
+    if (!name || !this.enabled) return;
+    const c = this.ctx, t = c.currentTime, out = this.ambGain, nodes = [];
+    const N = () => { const n = this.noise(); n.start(); nodes.push(n); return n; };
+    const F = (type, freq, q) => { const f = c.createBiquadFilter(); f.type = type; f.frequency.value = freq; if (q) f.Q.value = q; nodes.push(f); return f; };
+    const O = (type, freq) => { const o = c.createOscillator(); o.type = type; o.frequency.value = freq; o.start(); nodes.push(o); return o; };
+    const G = v => { const g = c.createGain(); g.gain.value = v; nodes.push(g); return g; };
+    let level = .08;
+    if (name === 'rain' || name === 'thunder'){
+      const f = F('bandpass', name === 'rain' ? 1800 : 1200, .6);
+      N().connect(f); f.connect(out);
+      level = name === 'rain' ? .1 : .07;
+    } else if (name === 'snow'){
+      const f = F('highpass', 6500);
+      N().connect(f); f.connect(out);
+      level = .018;
+    } else if (name === 'wind'){
+      const f = F('bandpass', 500, 1.4);
+      const lfo = O('sine', .13), lg = G(280);
+      lfo.connect(lg); lg.connect(f.frequency);
+      N().connect(f); f.connect(out);
+      level = .09;
+    } else if (name === 'ocean'){
+      const f = F('lowpass', 240);
+      const wg = G(.7);
+      const lfo = O('sine', .09), lg = G(.3);
+      lfo.connect(lg); lg.connect(wg.gain);
+      N().connect(f); f.connect(wg); wg.connect(out);
+      level = .14;
+      this.ambTimer = setInterval(() => this.bubble(), 2100);
+    } else if (name === 'fire'){
+      const f = F('lowpass', 700);
+      N().connect(f); f.connect(out);
+      level = .06;
+      this.ambTimer = setInterval(() => this.crackle(), 140);
+    } else if (name === 'moon'){
+      const g = G(.5);
+      O('sine', 165).connect(g);
+      O('sine', 165 * 1.007).connect(g);
+      g.connect(out);
+      level = .05;
+      this.ambTimer = setInterval(() => this.twinkle(), 4200);
+    } else if (name === 'stars' || name === 'flower'){
+      const base = name === 'stars' ? 220 : 330;
+      const g = G(.5);
+      O('sine', base).connect(g);
+      O('sine', base * 1.005).connect(g);
+      g.connect(out);
+      level = .05;
+      if (name === 'stars') this.ambTimer = setInterval(() => this.twinkle(), 3400);
+    }
+    out.gain.cancelScheduledValues(t);
+    out.gain.setValueAtTime(0, t);
+    out.gain.linearRampToValueAtTime(level, t + 1.2);
+    this.ambNodes = nodes;
+  },
+  env(g, peak, decay){
+    const t = this.ctx.currentTime;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(peak, t + .01);
+    g.gain.exponentialRampToValueAtTime(.0001, t + decay);
+  },
+  boom(){
+    if (!this.ctx || !this.enabled) return;
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(72, c.currentTime);
+    o.frequency.exponentialRampToValueAtTime(28, c.currentTime + .7);
+    this.env(g, .5, .8);
+    o.connect(g); g.connect(this.master);
+    o.start(); o.stop(c.currentTime + .85);
+  },
+  thunderClap(){
+    if (!this.ctx || !this.enabled) return;
+    const c = this.ctx;
+    const n = this.noise(), f = c.createBiquadFilter(), g = c.createGain();
+    f.type = 'lowpass';
+    f.frequency.setValueAtTime(900, c.currentTime);
+    f.frequency.exponentialRampToValueAtTime(90, c.currentTime + 1.1);
+    this.env(g, .55, 1.3);
+    n.connect(f); f.connect(g); g.connect(this.master);
+    n.start(); n.stop(c.currentTime + 1.4);
+    const o = c.createOscillator(), g2 = c.createGain();
+    o.type = 'sine'; o.frequency.value = 46;
+    this.env(g2, .4, 1.6);
+    o.connect(g2); g2.connect(this.master);
+    o.start(); o.stop(c.currentTime + 1.7);
+  },
+  chime(freq){
+    if (!this.ctx || !this.enabled) return;
+    const c = this.ctx;
+    [freq, freq * 2].forEach((f, i) => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      this.env(g, i ? .06 : .16, 1.8);
+      o.connect(g); g.connect(this.master);
+      o.start(); o.stop(c.currentTime + 1.9);
+    });
+  },
+  bubble(){
+    if (!this.ctx || !this.enabled) return;
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(rand(400, 700), c.currentTime);
+    o.frequency.exponentialRampToValueAtTime(rand(800, 1200), c.currentTime + .09);
+    this.env(g, .05, .12);
+    o.connect(g); g.connect(this.master);
+    o.start(); o.stop(c.currentTime + .15);
+  },
+  crackle(){
+    if (!this.ctx || !this.enabled || Math.random() < .4) return;
+    const c = this.ctx, n = this.noise(), f = c.createBiquadFilter(), g = c.createGain();
+    f.type = 'highpass'; f.frequency.value = 2400;
+    this.env(g, rand(.02, .07), .05);
+    n.connect(f); f.connect(g); g.connect(this.master);
+    n.start(); n.stop(c.currentTime + .08);
+  },
+  twinkle(){
+    if (!this.ctx || !this.enabled) return;
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine'; o.frequency.value = rand(1200, 2200);
+    this.env(g, .035, 1.4);
+    o.connect(g); g.connect(this.master);
+    o.start(); o.stop(c.currentTime + 1.5);
+  }
+};
+
+/* ================= 施法（言出法随） ================= */
+const laws = { '雨': 'rain', '雪': 'snow', '星': 'stars', '火': 'fire', '海': 'ocean', '雷': 'thunder', '電': 'thunder', '风': 'wind', '風': 'wind', '花': 'flower', '月': 'moon' };
+const effNames = { rain: '细雨润物', snow: '雪落无声', stars: '星河璀璨', fire: '烈焰焚空', ocean: '沧海横流', thunder: '雷霆万钧', wind: '长风万里', flower: '繁花似锦', moon: '明月照彻', world: '森罗万象', void: '万法归尘' };
+const ringColors = { rain: '148,168,205', snow: '236,240,248', stars: '230,220,190', fire: '232,164,80', ocean: '126,176,206', thunder: '200,214,255', wind: '205,205,195', flower: '230,180,150', moon: '214,228,255', world: '230,201,138', void: '233,228,216' };
+const fusionNames = { 'fire+wind': '焚天烈焰', 'ocean+stars': '星海倒映', 'snow+wind': '暴风雪', 'flower+wind': '花吹雪', 'rain+snow': '雨雪霏霏', 'fire+stars': '星火燎原', 'rain+thunder': '雷雨交加', 'flower+snow': '花雪同尘', 'ocean+thunder': '怒海惊雷', 'stars+wind': '星河流转', 'flower+stars': '花满星河', 'fire+ocean': '冰火同源', 'rain+stars': '星雨同辉', 'snow+stars': '雪夜星河', 'flower+rain': '花雨纷飞', 'ocean+rain': '江海同潮', 'fire+thunder': '雷火炼狱', 'ocean+wind': '海风怒涛', 'rain+wind': '风雨兼程', 'ocean+snow': '雪落沧海', 'flower+ocean': '海上花田', 'snow+thunder': '雷雪异象', 'stars+thunder': '星雷交响', 'thunder+wind': '风雷激荡', 'fire+snow': '雪火交融', 'flower+thunder': '惊雷绽芳', 'fire+rain': '火雨倾盆', 'fire+flower': '焰舞飞花', 'fire+moon': '烽火月夜', 'flower+moon': '花前月下', 'moon+ocean': '沧海月明', 'moon+rain': '云破月来', 'moon+stars': '星月交辉', 'moon+snow': '雪月同辉', 'moon+thunder': '月涌惊雷', 'moon+wind': '风月无边' };
+const multiNames = { 3: '三才同辉', 4: '四象汇聚', 5: '五行轮转', 6: '六合归一', 7: '七星连珠' };
+const multiPoems = { 3: '道生一 · 一生二 · 二生三 · 三生万物', 4: '两仪生四象 · 四象生八卦', 5: '五行相生 · 流转不息', 6: '六合之内 · 气象万千', 7: '七星高照 · 天命所归' };
+/* ================= 背景大字 ================= */
+const bgChar = document.getElementById('bgChar');
+const bgCharName = document.getElementById('bgCharName');
+const bgCharSeal = document.getElementById('bgCharSeal');
+function setBgChar(text, name, col){
+  bgChar.classList.remove('show');
+  clearTimeout(bgChar._t);
+  bgChar._t = setTimeout(() => {
+    bgCharName.textContent = name;
+    bgCharName.style.color = `rgba(${col},.5)`;
+    bgCharSeal.textContent = [...text][0] || '言';
+    bgChar.classList.add('show');
+  }, 900);
+}
+
+const statusText = document.getElementById('statusText');
+let statusTimer = null;
+function setStatus(s){
+  clearInterval(statusTimer);
+  let i = 0; statusText.textContent = '';
+  statusTimer = setInterval(() => {
+    i++; statusText.textContent = s.slice(0, i);
+    if (i >= s.length) clearInterval(statusTimer);
+  }, 26);
+}
+
+let castTimer = null;
+function castLaw(word){
+  const text = (word || '').trim();
+  if (!text) return;
+  let eff, effName;
+  if (text === '世界'){
+    eff = 'world'; effName = effNames.world;
+  } else {
+    const effs = [...new Set([...text].map(c => laws[c]).filter(Boolean))];
+    if (!effs.length) eff = 'void';
+    else if (effs.length === 1) eff = effs[0];
+    else if (effs.length >= 8){ eff = 'world'; effName = effNames.world; }
+    else eff = effs;
+    if (eff !== 'world')
+      effName = Array.isArray(eff)
+        ? (eff.length === 2
+          ? (fusionNames[eff.slice().sort().join('+')] || effNames[eff[0]] + ' · ' + effNames[eff[1]])
+          : multiNames[eff.length] || eff.length + ' 法共鸣')
+        : effNames[eff];
+  }
+  currentEffect = null;
+  camMode = 'push'; cam.tz = 1.08;
+  const size = text.length > 1
+    ? Math.min(150, W * .8 / text.length, H * .2)
+    : Math.min(W * .32, 280, H * .32);
+  formText(text, W / 2, H * .46, size);
+  setStatus(`法则凝聚 · 「${text}」`);
+  clearTimeout(castTimer);
+  castTimer = setTimeout(() => {
+    currentEffect = eff;
+    effectAge = 0;
+    release(eff);
+    const col = Array.isArray(eff) ? (ringColors[eff[0]] || '233,228,216') : (ringColors[eff] || '233,228,216');
+    spawnRing(W / 2, H * .46, Math.min(W, H) * .42, col, 1);
+    camMode = 'idle'; camPunch = .055; rotKick = (Math.random() < .5 ? -1 : 1) * .006;
+    shake(3.5);
+    AudioEngine.init();
+    if (AudioEngine.ctx && AudioEngine.ctx.state === 'suspended') AudioEngine.ctx.resume();
+    AudioEngine.setAmbient(Array.isArray(eff) ? pick(eff) : eff);
+    AudioEngine.boom();
+    showPoem(eff);
+    setBgChar(text, effName, col);
+    flashEl.style.opacity = .16;
+    setTimeout(() => { flashEl.style.opacity = 0; }, 120);
+    for (let i = 0; i < 36; i++){
+      const a2 = rand(0, Math.PI * 2), s2 = rand(2, 7);
+      spawn({ x: W / 2, y: H * .46, vx: Math.cos(a2) * s2, vy: Math.sin(a2) * s2, mode: 'fx', kind: 'burst', decay: rand(.008, .02), life: 1, size: rand(1, 2.2), color: col, alpha: rand(.7, 1) });
+    }
+    setStatus(eff === 'void' ? `「${text}」 已化入虚空 · ${effNames.void}` : `法则已生效 · 「${text}」 · ${effName}`);
+  }, 1700);
+}
+
+const chips = [...document.querySelectorAll('.chip')];
+let selected = [];
+let selectMode = 'single';
+const modeSingle = document.getElementById('modeSingle');
+const modeFusion = document.getElementById('modeFusion');
+function setMode(m){
+  selectMode = m;
+  modeSingle.classList.toggle('on', m === 'single');
+  modeFusion.classList.toggle('on', m === 'fusion');
+}
+modeSingle.addEventListener('click', () => setMode('single'));
+modeFusion.addEventListener('click', () => setMode('fusion'));
+chips.forEach(c => c.addEventListener('click', () => {
+  stopAuto();
+  const law = c.dataset.law;
+  if (selectMode === 'single'){
+    selected = [law];
+  } else {
+    if (selected.includes(law)) selected = selected.filter(l => l !== law);
+    else selected.push(law);
+  }
+  chips.forEach(x => x.classList.toggle('active', selected.includes(x.dataset.law)));
+  if (selected.length) castLaw(selected.length >= 8 ? '世界' : selected.join(''));
+}));
+const input = document.getElementById('cmdInput');
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter'){ stopAuto(); castLaw(input.value); input.value = ''; input.blur(); }
+});
+
+/* ================= 序章凝聚 ================= */
+let fontsReady = false, heroVisible = true;
+function formHero(){ formText('言出法随', W / 2, H * .42, Math.min(W * .15, 180)); }
+if (document.fonts && document.fonts.load){
+  Promise.all([
+    document.fonts.load('600 120px "Noto Serif SC"', '言出法随法则凝聚'),
+    document.fonts.ready
+  ]).then(() => { fontsReady = true; formHero(); });
+}
+setTimeout(() => { if (!fontsReady){ fontsReady = true; formHero(); } }, 2600);
+
+if ('IntersectionObserver' in window){
+  const io = new IntersectionObserver(es => {
+    es.forEach(e => {
+      if (e.target.id !== 'hero') return;
+      if (e.isIntersecting){
+        heroVisible = true;
+        if (fontsReady){ currentEffect = null; formHero(); AudioEngine.setAmbient(null); bgChar.classList.remove('show'); }
+      } else if (heroVisible){
+        heroVisible = false;
+        if (!currentEffect){ currentEffect = 'void'; release('void'); }
+      }
+    });
+  }, { threshold: .35 });
+  io.observe(document.getElementById('hero'));
+}
+
+/* ================= 滚动显现 ================= */
+const rio = new IntersectionObserver(es => {
+  es.forEach(e => { if (e.isIntersecting){ e.target.classList.add('in'); rio.unobserve(e.target); } });
+}, { threshold: .2 });
+document.querySelectorAll('.reveal').forEach(el => rio.observe(el));
+
+/* ================= 自定义光标 ================= */
+const dot = document.getElementById('cdot'), ring = document.getElementById('cring');
+let mx = W / 2, my = H / 2, rx = mx, ry = my;
+let lastDust = 0;
+window.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cam.px = mx / W - .5; cam.py = my / H - .5;
+  if (frame - lastDust > 2 && P.length < MAX - 50){
+    lastDust = frame;
+    spawn({ x: mx + rand(-3, 3), y: my + rand(-3, 3), vx: rand(-.3, .3), vy: rand(-.4, .1), mode: 'fx', kind: 'mote', decay: rand(.02, .04), life: 1, size: rand(.7, 1.5), color: '230,201,138', alpha: rand(.3, .6) });
+  }
+});
+let pressT = 0, pressX = 0, pressY = 0;
+window.addEventListener('mousedown', e => {
+  if (e.target.closest('button,a,input,nav')) return;
+  gravOn = true; pressT = performance.now(); pressX = e.clientX; pressY = e.clientY;
+});
+window.addEventListener('mouseup', () => {
+  gravOn = false;
+  if (pressT && performance.now() - pressT < 220){
+    const ce = Array.isArray(currentEffect) ? currentEffect[0] : currentEffect;
+    const col = ringColors[ce] || '230,201,138';
+    spawnRing(pressX, pressY, 130, col, .8);
+    for (let i = 0; i < 14; i++){
+      const a = rand(0, Math.PI * 2), s = rand(1, 4);
+      spawn({ x: pressX, y: pressY, vx: Math.cos(a) * s, vy: Math.sin(a) * s, mode: 'fx', kind: 'burst', decay: rand(.01, .025), life: 1, size: rand(.8, 1.8), color: col, alpha: rand(.6, 1) });
+    }
+    AudioEngine.bubble();
+  }
+  pressT = 0;
+});
+window.addEventListener('deviceorientation', e => {
+  if (e.gamma == null || e.beta == null) return;
+  cam.px = Math.max(-.5, Math.min(.5, e.gamma / 60));
+  cam.py = Math.max(-.5, Math.min(.5, (e.beta - 45) / 60));
+});
+(function cl(){
+  rx += (mx - rx) * .18; ry += (my - ry) * .18;
+  dot.style.transform = `translate(${mx}px,${my}px) translate(-50%,-50%)`;
+  ring.style.transform = `translate(${rx}px,${ry}px) translate(-50%,-50%)`;
+  requestAnimationFrame(cl);
+})();
+document.addEventListener('mouseover', e => { if (e.target.closest('a,button,input,.chip')) ring.classList.add('hovering'); });
+document.addEventListener('mouseout',  e => { if (e.target.closest('a,button,input,.chip')) ring.classList.remove('hovering'); });
+
+/* ================= 滚动进度 ================= */
+const prog = document.getElementById('progress');
+window.addEventListener('scroll', () => {
+  const h = document.documentElement;
+  const max = h.scrollHeight - h.clientHeight;
+  prog.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+}, { passive: true });
+
+/* ================= 诗句旁白 ================= */
+const poems = { rain: '好雨知时节 · 当春乃发生', snow: '晚来天欲雪 · 能饮一杯无', stars: '星垂平野阔 · 月涌大江流', fire: '野火烧不尽 · 春风吹又生', ocean: '海上生明月 · 天涯共此时', thunder: '九州生气恃风雷 · 万马齐喑究可哀', wind: '长风破浪会有时 · 直挂云帆济沧海', flower: '落红不是无情物 · 化作春泥更护土', moon: '明月出天山 · 苍茫云海间', void: '言尽之处 · 万法归尘' };
+const poemEl = document.getElementById('poem');
+let poemTimer = null;
+const fusionPoems = { 'ocean+stars': '醉后不知天在水 · 满船清梦压星河', 'fire+wind': '风助火势 · 火借风威', 'snow+wind': '北风卷地白草折 · 胡天八月即飞雪', 'flower+wind': '夜来风雨声 · 花落知多少', 'rain+thunder': '黑云翻墨未遮山 · 白雨跳珠乱入船', 'fire+stars': '聚是一团火 · 散作满天星', 'rain+snow': '雨雪霏霏 · 行道迟迟', 'moon+ocean': '海上生明月 · 天涯共此时', 'flower+moon': '花间一壶酒 · 独酌无相亲', 'moon+stars': '愿我如星君如月 · 夜夜流光相皎洁' };
+function showPoem(eff){
+  let line;
+  if (eff === 'world') line = '一沙一世界 · 一叶一菩提';
+  else if (Array.isArray(eff)) line = eff.length === 2 ? (fusionPoems[eff.slice().sort().join('+')] || poems[eff[0]]) : (multiPoems[eff.length] || '万法交织 · 气象万千');
+  else line = poems[eff];
+  poemEl.textContent = '「 ' + (line || poems.void) + ' 」';
+  poemEl.classList.add('show');
+  clearTimeout(poemTimer);
+  poemTimer = setTimeout(() => poemEl.classList.remove('show'), 5200);
+}
+
+/* ================= 音效开关 ================= */
+const soundBtn = document.getElementById('soundToggle');
+soundBtn.addEventListener('click', () => {
+  AudioEngine.enabled = !AudioEngine.enabled;
+  soundBtn.textContent = AudioEngine.enabled ? '音 · 开' : '音 · 默';
+  if (AudioEngine.enabled){
+    AudioEngine.init();
+    if (AudioEngine.ctx && AudioEngine.ctx.state === 'suspended') AudioEngine.ctx.resume();
+    if (AudioEngine.master) AudioEngine.master.gain.value = .5;
+    if (currentEffect) AudioEngine.setAmbient(currentEffect);
+  } else if (AudioEngine.master){
+    AudioEngine.master.gain.value = 0;
+  }
+});
+
+/* ================= 留影（截图） ================= */
+document.getElementById('shotBtn').addEventListener('click', () => {
+  canvas.toBlob(b => {
+    if (!b) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = '言出法随-' + Date.now() + '.png';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  });
+});
+
+/* ================= 自动演绎 ================= */
+const autoBtn = document.getElementById('autoPlay');
+const lawSeq = ['雨', '雪', '星', '火', '花', '风', '海', '雷', '星海', '火风', '月', '世界'];
+let autoTimer = null, autoIdx = 0;
+function stopAuto(){
+  clearTimeout(autoTimer); autoTimer = null;
+  autoBtn.textContent = '自动演绎 · 关';
+  autoBtn.classList.remove('on');
+}
+autoBtn.addEventListener('click', () => {
+  if (autoTimer){ stopAuto(); return; }
+  autoBtn.textContent = '自动演绎 · 开';
+  autoBtn.classList.add('on');
+  const step = () => {
+    const law = lawSeq[autoIdx++ % lawSeq.length];
+    selected = [...law].filter(ch => laws[ch]);
+    chips.forEach(x => x.classList.toggle('active', law.includes(x.dataset.law)));
+    castLaw(law);
+    autoTimer = setTimeout(step, 9000);
+  };
+  step();
+});
+
+/* ================= 键盘施法 1-8 ================= */
+window.addEventListener('keydown', e => {
+  if (e.target === input) return;
+  if (e.key === '9' || e.key === '0'){
+    stopAuto();
+    selected = [];
+    chips.forEach(x => x.classList.remove('active'));
+    castLaw(e.key === '9' ? '世界' : '月');
+    return;
+  }
+  const i = '12345678'.indexOf(e.key);
+  if (i < 0) return;
+  stopAuto();
+  const law = lawSeq[i];
+  selected = [law];
+  chips.forEach(x => x.classList.toggle('active', x.dataset.law === law));
+  castLaw(law);
+});
+
+})();
+</script>
+</body>
+</html>
