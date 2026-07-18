@@ -406,8 +406,8 @@ function release(effect){
       case 'cloud':   p.kind = 'mote';  p.vx = rand(.2, .7); p.vy = rand(-.05, .05); p.color = '205,208,214'; p.size = rand(2, 4.5); break;
       case 'mountain':p.kind = 'mote';  p.vx = rand(-.12, .12); p.vy = rand(-.2, -.06); p.color = '150,168,138'; break;
       case 'sunglow': p.kind = 'mote';  p.vx = rand(.4, 1); p.vy = rand(-.06, .06); p.color = pick(['242,170,120','238,140,110','246,200,140']); break;
-      case 'firefly': p.kind = 'mote';  p.vx = rand(-.5, .5); p.vy = rand(-.4, .4); p.color = pick(['190,230,140','230,240,170']); break;
-      case 'ink':     p.kind = 'rain';  p.vx = rand(-.1, .1); p.vy = rand(1.6, 3); p.color = '88,84,120'; p.size = rand(1.6, 3); p.decay = 0; break;
+      case 'firefly': p.kind = 'firefly'; p.vx = rand(-.3, .3); p.vy = rand(-.2, .2); p.color = pick(['190,230,140','230,240,170']); break;
+      case 'ink':     p.kind = 'rain';  p.vx = rand(-.1, .1); p.vy = rand(1.6, 3); p.color = '118,112,168'; p.size = rand(1.6, 3); p.decay = 0; break;
       case 'flower': {
         p.kind = 'petal';
         const a = rand(0, Math.PI * 2), s = rand(1, 4);
@@ -571,10 +571,10 @@ const emitters = {
       spawn({ x: rand(W * .1, W * .9), y: rand(0, H * .3), vx: rand(6, 10) * (Math.random() < .5 ? 1 : -1), vy: rand(1.5, 3), mode: 'fx', kind: 'shoot', decay: .008, life: 1, size: rand(1.2, 1.8), color: '230,236,250', alpha: 1 });
   },
   cloud(){
-    if (frame % 3 === 0)
-      spawn({ x: rand(-60, W), y: rand(H * .04, H * .5), vx: rand(.2, .6), vy: rand(-.03, .03), mode: 'fx', kind: 'mote', decay: .0008, life: 1, size: rand(2.5, 5.5), color: '205,208,214', alpha: rand(.05, .13) });
+    if (clouds.length < 6 && frame % 200 === 0)
+      clouds.push({ img: pick(cloudSprites), x: -340, y: rand(H * .03, H * .45), s: rand(.7, 1.6), v: rand(.12, .38), a: rand(.09, .17) });
     if (frame % 7 === 0)
-      spawn({ x: -14, y: rand(0, H * .4), vx: rand(.4, .9), vy: 0, mode: 'fx', kind: 'wind', decay: 0, life: 1, size: rand(.7, 1.2), color: '210,212,218', alpha: rand(.15, .3) });
+      spawn({ x: -14, y: rand(0, H * .45), vx: rand(.4, .9), vy: 0, mode: 'fx', kind: 'wind', decay: 0, life: 1, size: rand(.7, 1.2), color: '210,212,218', alpha: rand(.12, .25) });
   },
   mountain(){
     if (frame % 5 === 0)
@@ -586,13 +586,15 @@ const emitters = {
   },
   firefly(){
     for (let i = 0; i < 2; i++)
-      spawn({ x: rand(0, W), y: rand(H * .3, H * .92), vx: rand(-.4, .4), vy: rand(-.3, .3), mode: 'fx', kind: 'mote', decay: .002, life: 1, size: rand(.8, 1.6), color: pick(['190,230,140','230,240,170']), alpha: rand(.5, 1) });
+      spawn({ x: rand(0, W), y: rand(H * .3, H * .92), vx: rand(-.3, .3), vy: rand(-.2, .2), mode: 'fx', kind: 'firefly', decay: .0012, life: 1, size: rand(1, 1.9), color: pick(['190,230,140','230,240,170','160,220,120']), alpha: rand(.6, 1) });
   },
   ink(){
     for (let i = 0; i < 2; i++)
-      spawn({ x: rand(W * .08, W * .92), y: rand(-24, -4), vx: rand(-.1, .1), vy: rand(1.5, 2.8), mode: 'fx', kind: 'rain', decay: 0, life: 1, size: rand(1.8, 3.4), color: '88,84,120', alpha: rand(.45, .8) });
+      spawn({ x: rand(W * .08, W * .92), y: rand(-24, -4), vx: rand(-.1, .1), vy: rand(1.4, 2.6), mode: 'fx', kind: 'rain', decay: 0, life: 1, size: rand(2, 3.4), color: '118,112,168', alpha: rand(.5, .85) });
+    if (frame % 22 === 0)
+      spawnRing(rand(W * .1, W * .9), H - rand(4, 22), rand(18, 44), '118,112,168', .5, .3);
     if (frame % 4 === 0)
-      spawn({ x: rand(0, W), y: H - rand(0, 50), vx: rand(-.2, .2), vy: rand(-.1, -.02), mode: 'fx', kind: 'mote', decay: .001, life: 1, size: rand(1.5, 3), color: '70,66,100', alpha: rand(.1, .25) });
+      spawn({ x: rand(0, W), y: H - rand(0, 50), vx: rand(-.2, .2), vy: rand(-.1, -.02), mode: 'fx', kind: 'mote', decay: .001, life: 1, size: rand(1.5, 3), color: '96,90,150', alpha: rand(.1, .25) });
   }
 };
 
@@ -711,6 +713,39 @@ function drawMoon(t){
   ctx.fill();
 }
 
+/* ================= 云团 ================= */
+const cloudSprites = [];
+let clouds = [];
+function makeCloudSprites(){
+  cloudSprites.length = 0;
+  for (let v = 0; v < 3; v++){
+    const c = document.createElement('canvas');
+    c.width = 340; c.height = 170;
+    const n = c.getContext('2d');
+    for (let i = 0; i < 11; i++){
+      const x = 60 + rand(0, 220), y = 70 + rand(-26, 34), r = rand(24, 62);
+      const g = n.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, 'rgba(218,226,238,.55)');
+      g.addColorStop(.7, 'rgba(210,220,234,.18)');
+      g.addColorStop(1, 'rgba(210,220,234,0)');
+      n.fillStyle = g;
+      n.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    cloudSprites.push(c);
+  }
+}
+function drawClouds(){
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = clouds.length - 1; i >= 0; i--){
+    const c = clouds[i];
+    c.x += c.v;
+    if (c.x > W + 340){ clouds.splice(i, 1); continue; }
+    ctx.globalAlpha = c.a;
+    ctx.drawImage(c.img, c.x, c.y, 340 * c.s, 170 * c.s);
+  }
+  ctx.globalAlpha = 1;
+}
+
 /* ================= 远山与霞光 ================= */
 let mountainBg = null;
 function makeMountainBg(){
@@ -719,18 +754,29 @@ function makeMountainBg(){
   const n = mountainBg.getContext('2d');
   const w2 = mountainBg.width, h2 = mountainBg.height;
   for (let l = 0; l < 3; l++){
+    const base = h2 * (.58 + l * .14), amp = h2 * (.16 - l * .04);
+    const pts = [];
+    const step = 26 + l * 10;
+    for (let x = -step; x <= w2 + step; x += step)
+      pts.push([x, base - rand(amp * .25, amp) * (Math.random() < .2 ? 1.35 : 1)]);
     n.beginPath();
-    n.moveTo(0, h2);
-    const base = h2 * (.6 + l * .13), amp = h2 * (.13 - l * .03), ph = l * 2.3;
-    for (let x = 0; x <= w2; x += 6){
-      const y = base - Math.abs(Math.sin(x * .011 + ph)) * amp - Math.sin(x * .03 + ph * 2) * amp * .35;
-      n.lineTo(x, y);
-    }
-    n.lineTo(w2, h2);
+    n.moveTo(-step, h2);
+    for (const [x, y] of pts) n.lineTo(x, y);
+    n.lineTo(w2 + step, h2);
     n.closePath();
-    n.fillStyle = `rgba(${30 + l * 12},${38 + l * 12},${34 + l * 10},${.55 - l * .12})`;
+    n.fillStyle = `rgba(${24 + l * 9},${32 + l * 10},${28 + l * 8},${.6 + l * .12})`;
     n.fill();
+    n.beginPath();
+    pts.forEach(([x, y], i) => i ? n.lineTo(x, y) : n.moveTo(x, y));
+    n.strokeStyle = `rgba(150,168,138,${.16 - l * .04})`;
+    n.lineWidth = 1;
+    n.stroke();
   }
+  const fog = n.createLinearGradient(0, h2 * .8, 0, h2);
+  fog.addColorStop(0, 'rgba(170,185,175,0)');
+  fog.addColorStop(1, 'rgba(170,185,175,.09)');
+  n.fillStyle = fog;
+  n.fillRect(0, h2 * .8, w2, h2 * .2);
 }
 function drawMountain(){
   ctx.globalCompositeOperation = 'source-over';
@@ -738,12 +784,44 @@ function drawMountain(){
 }
 function drawSunglow(t){
   ctx.globalCompositeOperation = 'lighter';
-  const g = ctx.createLinearGradient(0, H * .3, 0, H);
-  g.addColorStop(0, 'rgba(238,140,110,0)');
-  g.addColorStop(.55, `rgba(238,140,110,${.06 + .015 * Math.sin(t / 1600)})`);
-  g.addColorStop(1, 'rgba(246,200,140,.11)');
+  const sx = W * .5, sy = H * .56, R = Math.min(W, H) * .085;
+  const halo = ctx.createRadialGradient(sx, sy, R * .3, sx, sy, R * 4.2);
+  halo.addColorStop(0, `rgba(246,180,120,${.16 + .02 * Math.sin(t / 1500)})`);
+  halo.addColorStop(1, 'rgba(238,120,90,0)');
+  ctx.fillStyle = halo;
+  ctx.fillRect(sx - R * 4.2, sy - R * 4.2, R * 8.4, R * 8.4);
+  const disc = ctx.createRadialGradient(sx, sy - R * .2, R * .1, sx, sy, R);
+  disc.addColorStop(0, 'rgba(255,214,150,.55)');
+  disc.addColorStop(.75, 'rgba(246,160,100,.4)');
+  disc.addColorStop(1, 'rgba(238,120,90,.08)');
+  ctx.fillStyle = disc;
+  ctx.beginPath(); ctx.arc(sx, sy, R, 0, Math.PI * 2); ctx.fill();
+  for (let l = 0; l < 3; l++){
+    const by = H * (.4 + l * .09) + Math.sin(t / 1800 + l * 2) * 6;
+    const col = l === 0 ? '238,140,150' : l === 1 ? '242,170,120' : '200,130,160';
+    const g = ctx.createLinearGradient(0, by - 14, 0, by + 14);
+    g.addColorStop(0, `rgba(${col},0)`);
+    g.addColorStop(.5, `rgba(${col},${.07 + .02 * Math.sin(t / 1200 + l)})`);
+    g.addColorStop(1, `rgba(${col},0)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, by - 14, W, 28);
+  }
+}
+function drawInk(t){
+  ctx.globalCompositeOperation = 'lighter';
+  const g = ctx.createLinearGradient(0, H * .72, 0, H);
+  g.addColorStop(0, 'rgba(96,90,150,0)');
+  g.addColorStop(1, `rgba(96,90,150,${.1 + .015 * Math.sin(t / 1700)})`);
   ctx.fillStyle = g;
-  ctx.fillRect(0, H * .3, W, H * .7);
+  ctx.fillRect(0, H * .72, W, H * .28);
+  ctx.beginPath();
+  for (let x = 0; x <= W; x += 14){
+    const y = H * .93 + Math.sin(x * .008 + t / 700) * 4 + Math.sin(x * .02 - t / 500) * 2;
+    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = 'rgba(140,134,190,.22)';
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
 }
 
 /* ================= 更新与绘制 ================= */
@@ -805,6 +883,13 @@ function update(p, t){
         case 'msnow':  p.x += p.vx; p.y += p.vy; if (p.x < -6) p.x = W + 6; if (p.x > W + 6) p.x = -6; if (p.y > H + 6) p.y = -6; break;
         case 'fish':   p.x += (p.dir || 1) * p.size * .055; if ((p.dir || 1) > 0 && p.x > W + 60) p.life = 0; if ((p.dir || 1) < 0 && p.x < -60) p.life = 0; break;
         case 'burst':  p.vx *= .97; p.vy *= .97; p.x += p.vx; p.y += p.vy; p.life -= p.decay; break;
+        case 'firefly':
+          p.vx += rand(-.05, .05); p.vy += rand(-.04, .04);
+          p.vx = Math.max(-.55, Math.min(.55, p.vx)); p.vy = Math.max(-.45, Math.min(.45, p.vy));
+          p.x += p.vx; p.y += p.vy; p.life -= p.decay;
+          if (p.x < -6) p.x = W + 6; if (p.x > W + 6) p.x = -6;
+          if (p.y < H * .15) p.y = H * .15; if (p.y > H + 6) p.y = H * .3;
+          break;
         case 'mote':   p.x += p.vx; p.y += p.vy; p.life -= p.decay; break;
         case 'wind':   p.x += p.vx; p.y += Math.sin(p.x * .008 + p.seed) * 1.4; if (p.x > W + 14) p.life = 0; break;
         case 'petal':  p.vx *= .965; p.vy *= .965; p.vy += .015; p.x += p.vx; p.y += p.vy; p.life -= p.decay; break;
@@ -819,9 +904,11 @@ function draw(p, t){
   if (a <= 0) return;
   if (p.kind === 'star' || p.kind === 'heroStar' || (p.kind === 'mote' && p.mode === 'drift'))
     a *= .3 + .7 * Math.abs(Math.sin(t / (320 + p.seed % 520) + p.seed));
+  if (p.kind === 'firefly')
+    a *= Math.pow(Math.max(0, Math.sin(t / (150 + p.seed % 200) + p.seed * 3)), 2);
   let dx = 0, dy = 0;
   if (p.mode === 'seek' && p.kind !== 'star'){ dx = Math.sin(t / 700 + p.seed) * .7; dy = Math.cos(t / 800 + p.seed) * .7; }
-  const glow = (p.kind === 'fire' || p.kind === 'petal' || p.kind === 'star' || p.kind === 'heroStar' || p.kind === 'shoot' || p.kind === 'foam' || p.kind === 'spark' || p.kind === 'pollen' || p.kind === 'snowBig' || p.kind === 'burst' || p.kind === 'bubble');
+  const glow = (p.kind === 'fire' || p.kind === 'petal' || p.kind === 'star' || p.kind === 'heroStar' || p.kind === 'shoot' || p.kind === 'foam' || p.kind === 'spark' || p.kind === 'pollen' || p.kind === 'snowBig' || p.kind === 'burst' || p.kind === 'bubble' || p.kind === 'firefly');
   ctx.globalCompositeOperation = glow ? 'lighter' : 'source-over';
   if (p.kind === 'heroStar'){
     const fl = p.flare * (.65 + .35 * Math.sin(t / 760 + p.seed));
@@ -956,6 +1043,8 @@ function tick(t){
   if (has('wind')) drawWindLines(t);
   if (has('moon')) drawMoon(t);
   if (has('sunglow')) drawSunglow(t);
+  if (has('ink')) drawInk(t);
+  if (has('cloud')) drawClouds();
   if (has('stars') && nebula){
     ctx.globalCompositeOperation = 'lighter';
     ctx.drawImage(nebula, 0, 0, W, H);
@@ -1047,6 +1136,7 @@ makeWaterBg();
 window.addEventListener('resize', makeWaterBg);
 makeMountainBg();
 window.addEventListener('resize', makeMountainBg);
+makeCloudSprites();
 
 /* ================= 音景（程序化音频） ================= */
 const AudioEngine = {
@@ -1250,7 +1340,7 @@ const laws = { '雨': 'rain', '雪': 'snow', '星': 'stars', '火': 'fire', '海
   '梦': ['moon','flower'], '夢': ['moon','flower'], '心': ['fire','moon'], '爱': ['flower','moon'], '愛': ['flower','moon'],
   '酒': ['moon','ocean'], '诗': ['wind','moon'], '詩': ['wind','moon'], '茶': ['flower','cloud'], '禅': ['moon','ink'] };
 const effNames = { rain: '细雨润物', snow: '雪落无声', stars: '星河璀璨', fire: '烈焰焚空', ocean: '沧海横流', thunder: '雷霆万钧', wind: '长风万里', flower: '繁花似锦', moon: '明月照彻', cloud: '云卷云舒', mountain: '远山如黛', sunglow: '霞光漫天', firefly: '流萤飞舞', ink: '墨染江山', world: '森罗万象', void: '万法归尘' };
-const ringColors = { rain: '148,168,205', snow: '236,240,248', stars: '230,220,190', fire: '232,164,80', ocean: '126,176,206', thunder: '200,214,255', wind: '205,205,195', flower: '230,180,150', moon: '214,228,255', cloud: '200,204,214', mountain: '150,168,138', sunglow: '240,168,118', firefly: '190,230,140', ink: '88,84,120', world: '230,201,138', void: '233,228,216' };
+const ringColors = { rain: '148,168,205', snow: '236,240,248', stars: '230,220,190', fire: '232,164,80', ocean: '126,176,206', thunder: '200,214,255', wind: '205,205,195', flower: '230,180,150', moon: '214,228,255', cloud: '200,204,214', mountain: '150,168,138', sunglow: '240,168,118', firefly: '190,230,140', ink: '118,112,168', world: '230,201,138', void: '233,228,216' };
 const fusionNames = { 'fire+wind': '焚天烈焰', 'ocean+stars': '星海倒映', 'snow+wind': '暴风雪', 'flower+wind': '花吹雪', 'rain+snow': '雨雪霏霏', 'fire+stars': '星火燎原', 'rain+thunder': '雷雨交加', 'flower+snow': '花雪同尘', 'ocean+thunder': '怒海惊雷', 'stars+wind': '星河流转', 'flower+stars': '花满星河', 'fire+ocean': '冰火同源', 'rain+stars': '星雨同辉', 'snow+stars': '雪夜星河', 'flower+rain': '花雨纷飞', 'ocean+rain': '江海同潮', 'fire+thunder': '雷火炼狱', 'ocean+wind': '海风怒涛', 'rain+wind': '风雨兼程', 'ocean+snow': '雪落沧海', 'flower+ocean': '海上花田', 'snow+thunder': '雷雪异象', 'stars+thunder': '星雷交响', 'thunder+wind': '风雷激荡', 'fire+snow': '雪火交融', 'flower+thunder': '惊雷绽芳', 'fire+rain': '火雨倾盆', 'fire+flower': '焰舞飞花', 'fire+moon': '烽火月夜', 'flower+moon': '花前月下', 'moon+ocean': '沧海月明', 'moon+rain': '云破月来', 'moon+stars': '星月交辉', 'moon+snow': '雪月同辉', 'moon+thunder': '月涌惊雷', 'moon+wind': '风月无边' };
 const multiNames = { 3: '三才同辉', 4: '四象汇聚', 5: '五行轮转', 6: '六合归一', 7: '七星连珠' };
 const multiPoems = { 3: '道生一 · 一生二 · 二生三 · 三生万物', 4: '两仪生四象 · 四象生八卦', 5: '五行相生 · 流转不息', 6: '六合之内 · 气象万千', 7: '七星高照 · 天命所归' };
