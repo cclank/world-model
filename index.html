@@ -398,7 +398,7 @@ function release(effect){
         p.color = pick(['233,228,216','230,220,190','200,214,235','255,244,214']);
         p.decay = 0; p.life = 1;
         break;
-      case 'fire':    p.kind = 'fire';  p.vx = rand(-1, 1); p.vy = rand(-4, -1.5); p.color = pick(['232,164,80','224,120,58','242,202,120']); break;
+      case 'fire':    p.kind = 'fire';  p.vx = rand(-1.2, 1.2); p.vy = rand(-6, -2); p.color = pick(['232,164,80','224,120,58','242,202,120','255,140,60','255,236,190']); break;
       case 'ocean':   p.kind = 'bubble'; p.vx = 0; p.vy = rand(-2.2, -.9); p.color = '180,220,245'; p.decay = 0; break;
       case 'thunder': p.kind = 'mote';  p.vx = rand(-.3, .3); p.vy = rand(.2, .8); p.color = '118,124,148'; break;
       case 'wind':    p.kind = 'wind';  p.vx = rand(3, 7); p.vy = 0; p.color = '205,205,195'; p.decay = 0; break;
@@ -511,10 +511,29 @@ const emitters = {
       spawn({ x: rand(W * .15, W * .85), y: rand(0, H * .3), vx: rand(7, 11) * (Math.random() < .5 ? 1 : -1), vy: rand(2, 3.5), mode: 'fx', kind: 'shoot', decay: .009, life: 1, size: rand(1.4, 2), color: '240,236,220', alpha: 1 });
   },
   fire(){
-    for (let i = 0; i < 11 * intensity(); i++)
-      spawn({ x: rand(0, W), y: H + 6, vx: rand(-.5, .5), vy: rand(-3.8, -1.4), mode: 'fx', kind: 'fire', decay: rand(.005, .011), life: 1, size: rand(1, 2.8), color: pick(['232,164,80','224,120,58','242,202,120','200,90,50']), alpha: rand(.6, 1) });
-    if (frame % 6 === 0)
-      spawn({ x: rand(W * .2, W * .8), y: H - rand(0, 30), vx: rand(-2.4, 2.4), vy: rand(-6, -3), mode: 'fx', kind: 'spark', decay: rand(.012, .02), life: 1, size: rand(.8, 1.4), color: '255,226,160', alpha: 1 });
+    const n = 10 + intensity() * 8;
+    for (let i = 0; i < n; i++)
+      spawn({ x: rand(0, W), y: H + 6, vx: rand(-.6, .6), vy: rand(-5, -2), mode: 'fx', kind: 'fire', decay: rand(.004, .009), life: 1, size: rand(1.4, 3.4), color: pick(['232,164,80','224,120,58','242,202,120','200,90,50','255,140,60']), alpha: rand(.7, 1) });
+    for (let i = 0; i < 4; i++)
+      spawn({ x: rand(0, W), y: H + 4, vx: rand(-.3, .3), vy: rand(-6.5, -3.5), mode: 'fx', kind: 'fire', decay: rand(.003, .006), life: 1, size: rand(1, 2), color: pick(['255,236,190','255,244,214']), alpha: rand(.8, 1) });
+    if (frame % 3 === 0){
+      const bx = pick([W * .22, W * .5, W * .78]) + rand(-36, 36);
+      for (let i = 0; i < 3; i++)
+        spawn({ x: bx + rand(-20, 20), y: H + 4, vx: rand(-.3, .3), vy: rand(-8, -5), mode: 'fx', kind: 'fire', decay: rand(.003, .006), life: 1, size: rand(1.6, 3.4), color: pick(['255,180,80','242,202,120']), alpha: rand(.8, 1) });
+    }
+    if (frame % 4 === 0)
+      spawn({ x: rand(0, W), y: H - rand(0, 60), vx: rand(-3, 3), vy: rand(-8, -4), mode: 'fx', kind: 'spark', decay: rand(.01, .018), life: 1, size: rand(1, 1.8), color: '255,226,160', alpha: 1 });
+    if (frame % 9 === 0)
+      spawn({ x: rand(0, W), y: H - rand(30, 120), vx: rand(-.2, .2), vy: rand(-1.6, -.8), mode: 'fx', kind: 'rain', decay: rand(.002, .004), life: 1, size: rand(.6, 1), color: '232,150,80', alpha: rand(.08, .18) });
+    if (frame % 600 === 0){
+      shake(3); camPunch += .025;
+      flashEl.style.opacity = .08;
+      setTimeout(() => { flashEl.style.opacity = 0; }, 130);
+      for (let i = 0; i < 46; i++){
+        const a = rand(-Math.PI * .85, -Math.PI * .15), s = rand(3, 10);
+        spawn({ x: rand(W * .15, W * .85), y: H, vx: Math.cos(a) * s, vy: Math.sin(a) * s, mode: 'fx', kind: 'spark', decay: rand(.008, .016), life: 1, size: rand(1, 2), color: pick(['255,236,190','255,180,80']), alpha: 1 });
+      }
+    }
   },
   ocean(){
     if (frame % 2 === 0)
@@ -653,18 +672,39 @@ function makeFireGlow(){
 }
 function drawFlames(t){
   ctx.globalCompositeOperation = 'lighter';
-  if (fireGlow) ctx.drawImage(fireGlow, 0, H - (H >> 2), W, H >> 2);
-  for (let l = 0; l < 3; l++){
+  if (fireGlow) ctx.drawImage(fireGlow, 0, H - (H >> 1), W, H >> 1);
+  const amb = ctx.createLinearGradient(0, H * .45, 0, H);
+  amb.addColorStop(0, 'rgba(224,120,58,0)');
+  amb.addColorStop(1, `rgba(226,126,60,${.1 + .025 * Math.sin(t / 900)})`);
+  ctx.fillStyle = amb;
+  ctx.fillRect(0, H * .45, W, H * .55);
+  for (let l = 0; l < 4; l++){
     ctx.beginPath();
     ctx.moveTo(0, H);
-    const amp = 60 + l * 46;
-    for (let x = 0; x <= W; x += 14){
-      const y = H - Math.abs(Math.sin(x * .004 + t / (300 + l * 120) + l * 9)) * amp * (.6 + .4 * Math.sin(t / 200 + x * .01 + l));
+    const amp = 130 + l * 62;
+    for (let x = 0; x <= W; x += 12){
+      const w1 = Math.abs(Math.sin(x * .004 + t / (260 + l * 110) + l * 9));
+      const y = H - Math.pow(w1, 1.7) * amp * (.55 + .45 * Math.sin(t / 180 + x * .012 + l));
       ctx.lineTo(x, y);
     }
     ctx.lineTo(W, H);
     ctx.closePath();
-    ctx.fillStyle = `rgba(${l === 0 ? '224,120,58' : l === 1 ? '232,164,80' : '242,202,120'},${.05 + l * .02})`;
+    ctx.fillStyle = `rgba(${l < 2 ? '224,120,58' : l === 2 ? '232,164,80' : '242,202,120'},${.08 + l * .02})`;
+    ctx.fill();
+  }
+  for (let l = 0; l < 3; l++){
+    const bx = W * (.22 + l * .28) + Math.sin(t / 1200 + l * 2.2) * 46;
+    const hgt = H * (.34 + .14 * Math.sin(t / 640 + l * 1.7));
+    const g = ctx.createLinearGradient(0, H - hgt, 0, H);
+    g.addColorStop(0, 'rgba(255,220,150,0)');
+    g.addColorStop(.65, `rgba(238,150,70,${.06 + .02 * Math.sin(t / 480 + l)})`);
+    g.addColorStop(1, 'rgba(224,110,50,.16)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(bx - 20, H);
+    ctx.quadraticCurveTo(bx - 12 - Math.sin(t / 280 + l) * 9, H - hgt * .55, bx, H - hgt);
+    ctx.quadraticCurveTo(bx + 12 + Math.cos(t / 320 + l) * 9, H - hgt * .55, bx + 20, H);
+    ctx.closePath();
     ctx.fill();
   }
 }
