@@ -432,6 +432,16 @@ function release(effect){
       case 'sunglow': p.kind = 'mote';  p.vx = rand(.4, 1); p.vy = rand(-.06, .06); p.color = pick(['242,170,120','238,140,110','246,200,140']); break;
       case 'firefly': p.kind = 'firefly'; p.vx = rand(-.3, .3); p.vy = rand(-.2, .2); p.color = pick(['190,230,140','230,240,170']); break;
       case 'ink':     p.kind = 'rain';  p.vx = rand(-.1, .1); p.vy = rand(1.6, 3); p.color = '34,32,44'; p.size = rand(1.6, 3); p.decay = 0; break;
+      case 'dragon': {
+        /* 字化龙形——粒子排作 S 形龙带横贯太虚，片刻后散去 */
+        p.kind = 'scale'; p.mode = 'seek';
+        const u = Math.random();
+        p.tx = W * (.06 + .88 * u);
+        p.ty = H * .4 + Math.sin(u * Math.PI * 2.6) * H * .14 + rand(-8, 8);
+        p.color = pick(['246,222,150','222,186,110','240,214,150']);
+        p.decay = 0; p.life = 1;
+        break;
+      }
       case 'flower': {
         p.kind = 'petal';
         const a = rand(0, Math.PI * 2), s = rand(1, 4);
@@ -631,6 +641,18 @@ const emitters = {
   firefly(){
     for (let i = 0; i < 2; i++)
       spawn({ x: rand(0, W), y: rand(H * .3, H * .92), vx: rand(-.3, .3), vy: rand(-.2, .2), mode: 'fx', kind: 'firefly', decay: .0012, life: 1, size: rand(1, 1.9), color: pick(['190,230,140','230,240,170','160,220,120']), alpha: rand(.6, 1) });
+  },
+  dragon(){
+    /* 龙行带云 */
+    if (frame % 3 === 0)
+      spawn({ x: rand(0, W), y: rand(H * .08, H * .6), vx: rand(-.25, .25), vy: rand(-.05, .1), mode: 'fx', kind: 'mote', decay: .001, life: 1, size: rand(2, 5.5), color: '200,204,214', alpha: rand(.08, .2) });
+    /* 金鳞自龙身散落 */
+    if (frame % 4 === 0 && dragonTrail.length > 10){
+      const p = dragonTrail[(Math.random() * dragonTrail.length) | 0];
+      spawn({ x: p.x + rand(-8, 8), y: p.y + rand(-8, 8), vx: rand(-.3, .3), vy: rand(.1, .5), mode: 'fx', kind: 'spark', decay: rand(.01, .02), life: 1, size: rand(.8, 1.6), color: '246,222,150', alpha: rand(.5, 1) });
+    }
+    /* 龙吟引雷，十五秒一瞬 */
+    if (frame % 900 === 450) spawnBolt();
   },
   ink(){
     /* 墨滴垂落——疏落见笔意 */
@@ -917,6 +939,86 @@ function drawInk(t){
   }
 }
 
+/* ================= 游龙 ================= */
+const dragonTrail = [];
+function drawDragon(t){
+  if (t - (drawDragon._t || 0) > 1800) dragonTrail.length = 0;
+  drawDragon._t = t;
+  ctx.globalCompositeOperation = inkBg ? 'source-over' : 'lighter';
+  /* 龙头游走：利萨茹翻飞；龙身弹簧链逐节跟随 */
+  const hx = W * .5 + Math.sin(t / 3600) * W * .34 + Math.sin(t / 1570) * W * .07;
+  const hy = H * .36 + Math.sin(t / 2300) * H * .15 + Math.sin(t / 940) * H * .05;
+  if (!dragonTrail.length)
+    for (let i = 0; i < 56; i++) dragonTrail.push({ x: hx - i * 13, y: hy });
+  dragonTrail[0].x = hx; dragonTrail[0].y = hy;
+  for (let i = 1; i < dragonTrail.length; i++){
+    const a = dragonTrail[i - 1], b = dragonTrail[i];
+    const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || .001;
+    b.x = a.x + dx / d * 13; b.y = a.y + dy / d * 13;
+  }
+  const N = dragonTrail.length;
+  if (N < 3) return;
+  /* 龙身：自尾至首，由细而粗 */
+  for (let i = N - 1; i >= 0; i--){
+    const p = dragonTrail[i], k = 1 - i / N;
+    const r = 1.2 + k * k * 8.5;
+    const warm = k > .55 ? '246,222,150' : '222,186,110';
+    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 1.6);
+    g.addColorStop(0, `rgba(${warm},${.13 + k * .34})`);
+    g.addColorStop(1, 'rgba(222,186,110,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(p.x, p.y, r * 1.6, 0, Math.PI * 2); ctx.fill();
+    /* 龙脊实线——金骨一脉 */
+    if (i > 0){
+      const q = dragonTrail[i - 1];
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(q.x, q.y);
+      ctx.strokeStyle = `rgba(240,208,130,${.1 + k * .3})`;
+      ctx.lineWidth = 1 + k * 2.2;
+      ctx.stroke();
+    }
+    /* 脊鬃 */
+    if (i % 4 === 2 && i > 3){
+      const q = dragonTrail[i - 3];
+      const ang = Math.atan2(p.y - q.y, p.x - q.x) - Math.PI / 2 + Math.sin(t / 300 + i) * .2;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x + Math.cos(ang) * r * 2, p.y + Math.sin(ang) * r * 2);
+      ctx.strokeStyle = `rgba(240,214,150,${.1 + k * .22})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  }
+  /* 龙首：金睛、双角、飘须 */
+  const hd = dragonTrail[0], nk = dragonTrail[4] || hd;
+  const ha = Math.atan2(hd.y - nk.y, hd.x - nk.x);
+  const px = Math.cos(ha + Math.PI / 2), py = Math.sin(ha + Math.PI / 2);
+  ctx.fillStyle = 'rgba(255,240,190,.9)';
+  ctx.beginPath(); ctx.arc(hd.x + Math.cos(ha) * 4 + px * 3, hd.y + Math.sin(ha) * 4 + py * 3, 1.6, 0, Math.PI * 2); ctx.fill();
+  for (const s of [-1, 1]){
+    ctx.beginPath();
+    ctx.moveTo(hd.x + px * 4 * s, hd.y + py * 4 * s);
+    ctx.quadraticCurveTo(
+      hd.x - Math.cos(ha) * 12 + px * 9 * s, hd.y - Math.sin(ha) * 12 + py * 9 * s,
+      hd.x - Math.cos(ha) * 22 + px * 6 * s, hd.y - Math.sin(ha) * 22 + py * 6 * s
+    );
+    ctx.strokeStyle = 'rgba(246,222,150,.5)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    const wob = Math.sin(t / 260 + s) * 6;
+    ctx.beginPath();
+    ctx.moveTo(hd.x + Math.cos(ha) * 6 + px * 2 * s, hd.y + Math.sin(ha) * 6 + py * 2 * s);
+    ctx.quadraticCurveTo(
+      hd.x + Math.cos(ha) * 20 + px * (8 * s + wob * .3), hd.y + Math.sin(ha) * 20 + py * (8 * s + wob * .3),
+      hd.x + Math.cos(ha) * 30 + px * (14 * s + wob), hd.y + Math.sin(ha) * 30 + py * (14 * s + wob)
+    );
+    ctx.strokeStyle = 'rgba(240,214,150,.35)';
+    ctx.lineWidth = .8;
+    ctx.stroke();
+  }
+}
+
 /* ================= 更新与绘制 ================= */
 function update(p, t){
   if (gravOn){
@@ -933,8 +1035,10 @@ function update(p, t){
       p.vx = (p.vx + (p.tx - p.x) * .018) * .88;
       p.vy = (p.vy + (p.ty - p.y) * .018) * .88;
       p.x += p.vx; p.y += p.vy;
-      if (p.kind === 'star' && Math.abs(p.tx - p.x) + Math.abs(p.ty - p.y) < 4){
-        p.mode = 'fx'; p.vx = rand(-.06, .06); p.vy = rand(-.04, .04); p.decay = 0; p.life = 1;
+      if ((p.kind === 'star' || p.kind === 'scale') && Math.abs(p.tx - p.x) + Math.abs(p.ty - p.y) < 4){
+        p.mode = 'fx'; p.vx = rand(-.06, .06); p.vy = rand(-.04, .04); p.life = 1;
+        /* 龙鳞到位后缓缓散去，让游龙独舞 */
+        p.decay = p.kind === 'scale' ? rand(.004, .009) : 0;
       }
       break;
     case 'drift':
@@ -1001,7 +1105,7 @@ function draw(p, t){
     a *= Math.pow(Math.max(0, Math.sin(t / (150 + p.seed % 200) + p.seed * 3)), 2);
   let dx = 0, dy = 0;
   if (p.mode === 'seek' && p.kind !== 'star'){ dx = Math.sin(t / 700 + p.seed) * .7; dy = Math.cos(t / 800 + p.seed) * .7; }
-  const glow = (p.kind === 'fire' || p.kind === 'petal' || p.kind === 'star' || p.kind === 'heroStar' || p.kind === 'shoot' || p.kind === 'foam' || p.kind === 'spark' || p.kind === 'pollen' || p.kind === 'snowBig' || p.kind === 'burst' || p.kind === 'bubble' || p.kind === 'firefly');
+  const glow = (p.kind === 'fire' || p.kind === 'petal' || p.kind === 'star' || p.kind === 'heroStar' || p.kind === 'shoot' || p.kind === 'foam' || p.kind === 'spark' || p.kind === 'pollen' || p.kind === 'snowBig' || p.kind === 'burst' || p.kind === 'bubble' || p.kind === 'firefly' || p.kind === 'scale');
   ctx.globalCompositeOperation = glow ? 'lighter' : 'source-over';
   if (p.kind === 'heroStar'){
     const fl = p.flare * (.65 + .35 * Math.sin(t / 760 + p.seed));
@@ -1137,6 +1241,7 @@ function tick(t){
   if (has('wind')) drawWindLines(t);
   if (has('moon')) drawMoon(t);
   if (has('sunglow')) drawSunglow(t);
+  if (has('dragon')) drawDragon(t);
   if (inkBg) drawInk(t);
   if (has('cloud')) drawClouds();
   if (has('stars') && nebula){
@@ -1329,6 +1434,15 @@ const AudioEngine = {
       g.connect(out);
       level = .04;
       this.ambTimer = setInterval(() => this.twinkle(), 2600);
+    } else if (name === 'dragon'){
+      /* 龙吟：低频双吟 + 风行低通 */
+      const f = F('lowpass', 190);
+      N().connect(f); f.connect(out);
+      const g = G(.45);
+      O('sine', 82).connect(g);
+      O('sine', 82 * 1.006).connect(g);
+      g.connect(out);
+      level = .055;
     } else if (name === 'ink'){
       const f = F('lowpass', 320);
       N().connect(f); f.connect(out);
@@ -1431,11 +1545,11 @@ const laws = { '雨': 'rain', '雪': 'snow', '星': 'stars', '火': 'fire', '海
   '冰': ['snow','stars'], '霜': ['snow','moon'], '雾': ['cloud','wind'], '霧': ['cloud','wind'], '露': ['rain','flower'], '虹': ['rain','stars'],
   '烟': ['fire','wind'], '煙': ['fire','wind'], '炎': 'fire', '焰': 'fire', '光': ['stars','moon'], '夜': ['moon','stars'], '晓': ['sunglow','stars'], '曉': ['sunglow','stars'],
   '春': ['flower','rain'], '夏': ['fire','thunder'], '秋': ['wind','flower'], '冬': ['snow','wind'],
-  '龙': ['thunder','ocean'], '龍': ['thunder','ocean'], '凤': ['fire','wind'], '鳳': ['fire','wind'], '剑': ['wind','stars'], '劍': ['wind','stars'],
+  '龙': 'dragon', '龍': 'dragon', '凤': ['fire','wind'], '鳳': ['fire','wind'], '剑': ['wind','stars'], '劍': ['wind','stars'],
   '梦': ['moon','flower'], '夢': ['moon','flower'], '心': ['fire','moon'], '爱': ['flower','moon'], '愛': ['flower','moon'],
   '酒': ['moon','ocean'], '诗': ['wind','moon'], '詩': ['wind','moon'], '茶': ['flower','cloud'], '禅': ['moon','ink'] };
-const effNames = { rain: '细雨润物', snow: '雪落无声', stars: '星河璀璨', fire: '烈焰焚空', ocean: '沧海横流', thunder: '雷霆万钧', wind: '长风万里', flower: '繁花似锦', moon: '明月照彻', cloud: '云卷云舒', mountain: '远山如黛', sunglow: '霞光漫天', firefly: '流萤飞舞', ink: '墨染江山', world: '森罗万象', void: '万法归尘' };
-const ringColors = { rain: '148,168,205', snow: '236,240,248', stars: '230,220,190', fire: '232,164,80', ocean: '126,176,206', thunder: '200,214,255', wind: '205,205,195', flower: '230,180,150', moon: '214,228,255', cloud: '200,204,214', mountain: '150,168,138', sunglow: '240,168,118', firefly: '190,230,140', ink: '34,32,44', world: '230,201,138', void: '233,228,216' };
+const effNames = { rain: '细雨润物', snow: '雪落无声', stars: '星河璀璨', fire: '烈焰焚空', ocean: '沧海横流', thunder: '雷霆万钧', wind: '长风万里', flower: '繁花似锦', moon: '明月照彻', cloud: '云卷云舒', mountain: '远山如黛', sunglow: '霞光漫天', firefly: '流萤飞舞', ink: '墨染江山', dragon: '龙游太虚', world: '森罗万象', void: '万法归尘' };
+const ringColors = { rain: '148,168,205', snow: '236,240,248', stars: '230,220,190', fire: '232,164,80', ocean: '126,176,206', thunder: '200,214,255', wind: '205,205,195', flower: '230,180,150', moon: '214,228,255', cloud: '200,204,214', mountain: '150,168,138', sunglow: '240,168,118', firefly: '190,230,140', ink: '34,32,44', dragon: '222,186,110', world: '230,201,138', void: '233,228,216' };
 const fusionNames = { 'fire+wind': '焚天烈焰', 'ocean+stars': '星海倒映', 'snow+wind': '暴风雪', 'flower+wind': '花吹雪', 'rain+snow': '雨雪霏霏', 'fire+stars': '星火燎原', 'rain+thunder': '雷雨交加', 'flower+snow': '花雪同尘', 'ocean+thunder': '怒海惊雷', 'stars+wind': '星河流转', 'flower+stars': '花满星河', 'fire+ocean': '冰火同源', 'rain+stars': '星雨同辉', 'snow+stars': '雪夜星河', 'flower+rain': '花雨纷飞', 'ocean+rain': '江海同潮', 'fire+thunder': '雷火炼狱', 'ocean+wind': '海风怒涛', 'rain+wind': '风雨兼程', 'ocean+snow': '雪落沧海', 'flower+ocean': '海上花田', 'snow+thunder': '雷雪异象', 'stars+thunder': '星雷交响', 'thunder+wind': '风雷激荡', 'fire+snow': '雪火交融', 'flower+thunder': '惊雷绽芳', 'fire+rain': '火雨倾盆', 'fire+flower': '焰舞飞花', 'fire+moon': '烽火月夜', 'flower+moon': '花前月下', 'moon+ocean': '沧海月明', 'moon+rain': '云破月来', 'moon+stars': '星月交辉', 'moon+snow': '雪月同辉', 'moon+thunder': '月涌惊雷', 'moon+wind': '风月无边' };
 const multiNames = { 3: '三才同辉', 4: '四象汇聚', 5: '五行轮转', 6: '六合归一', 7: '七星连珠' };
 const multiPoems = { 3: '道生一 · 一生二 · 二生三 · 三生万物', 4: '两仪生四象 · 四象生八卦', 5: '五行相生 · 流转不息', 6: '六合之内 · 气象万千', 7: '七星高照 · 天命所归' };
@@ -1635,7 +1749,7 @@ window.addEventListener('scroll', () => {
 }, { passive: true });
 
 /* ================= 诗句旁白 ================= */
-const poems = { rain: '好雨知时节 · 当春乃发生', snow: '晚来天欲雪 · 能饮一杯无', stars: '星垂平野阔 · 月涌大江流', fire: '野火烧不尽 · 春风吹又生', ocean: '海上生明月 · 天涯共此时', thunder: '九州生气恃风雷 · 万马齐喑究可哀', wind: '长风破浪会有时 · 直挂云帆济沧海', flower: '落红不是无情物 · 化作春泥更护土', moon: '明月出天山 · 苍茫云海间', cloud: '行到水穷处 · 坐看云起时', mountain: '相看两不厌 · 只有敬亭山', sunglow: '落霞与孤鹜齐飞 · 秋水共长天一色', firefly: '银烛秋光冷画屏 · 轻罗小扇扑流萤', ink: '挥毫落纸如云烟', void: '言尽之处 · 万法归尘' };
+const poems = { rain: '好雨知时节 · 当春乃发生', snow: '晚来天欲雪 · 能饮一杯无', stars: '星垂平野阔 · 月涌大江流', fire: '野火烧不尽 · 春风吹又生', ocean: '海上生明月 · 天涯共此时', thunder: '九州生气恃风雷 · 万马齐喑究可哀', wind: '长风破浪会有时 · 直挂云帆济沧海', flower: '落红不是无情物 · 化作春泥更护土', moon: '明月出天山 · 苍茫云海间', cloud: '行到水穷处 · 坐看云起时', mountain: '相看两不厌 · 只有敬亭山', sunglow: '落霞与孤鹜齐飞 · 秋水共长天一色', firefly: '银烛秋光冷画屏 · 轻罗小扇扑流萤', ink: '挥毫落纸如云烟', dragon: '飞龙在天 · 利见大人', void: '言尽之处 · 万法归尘' };
 const poemEl = document.getElementById('poem');
 let poemTimer = null;
 const fusionPoems = { 'ocean+stars': '醉后不知天在水 · 满船清梦压星河', 'fire+wind': '风助火势 · 火借风威', 'snow+wind': '北风卷地白草折 · 胡天八月即飞雪', 'flower+wind': '夜来风雨声 · 花落知多少', 'rain+thunder': '黑云翻墨未遮山 · 白雨跳珠乱入船', 'fire+stars': '聚是一团火 · 散作满天星', 'rain+snow': '雨雪霏霏 · 行道迟迟', 'moon+ocean': '海上生明月 · 天涯共此时', 'flower+moon': '花间一壶酒 · 独酌无相亲', 'moon+stars': '愿我如星君如月 · 夜夜流光相皎洁' };
