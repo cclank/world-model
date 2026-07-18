@@ -114,6 +114,30 @@ h2{font-size:clamp(32px,4.6vw,58px);font-weight:600;letter-spacing:.14em;margin:
 .mode-btn:hover{color:var(--gold2);border-color:var(--gold)}
 .mode-btn.on{color:var(--gold2);border-color:var(--gold);box-shadow:0 0 18px rgba(200,164,92,.18)}
 
+/* ---------- 墨法 · 宣纸模式 ---------- */
+body.ink-mode .chip{color:rgba(38,36,48,.92);border-color:rgba(38,36,48,.32);background:rgba(38,36,48,.04)}
+body.ink-mode .chip:hover,body.ink-mode .chip.active{border-color:var(--seal);color:var(--seal);box-shadow:0 12px 30px -10px rgba(166,61,42,.3)}
+body.ink-mode .cmd-input{color:rgba(38,36,48,.95);border-bottom-color:rgba(38,36,48,.35)}
+body.ink-mode .cmd-input::placeholder{color:rgba(38,36,48,.42)}
+body.ink-mode nav{background:rgba(243,241,235,.55);border-bottom-color:rgba(38,36,48,.1)}
+body.ink-mode .brand-text{color:rgba(38,36,48,.92)}
+body.ink-mode .links a{color:rgba(38,36,48,.58)}
+body.ink-mode .links a:hover{color:var(--seal)}
+body.ink-mode .links a::after{background:var(--seal)}
+body.ink-mode .cmd-input:focus{border-color:var(--seal);box-shadow:0 18px 30px -22px rgba(166,61,42,.35)}
+body.ink-mode .status{color:var(--seal)}
+body.ink-mode .status .prompt{color:rgba(38,36,48,.35)}
+body.ink-mode .caret{color:var(--seal)}
+body.ink-mode .mode-btn,body.ink-mode .sound-toggle,body.ink-mode .auto-play{color:rgba(38,36,48,.62);border-color:rgba(38,36,48,.28)}
+body.ink-mode .mode-btn:hover,body.ink-mode .sound-toggle:hover,body.ink-mode .auto-play:hover{color:var(--seal);border-color:var(--seal)}
+body.ink-mode .mode-btn.on,body.ink-mode .auto-play.on{color:var(--seal);border-color:var(--seal);box-shadow:0 0 18px rgba(166,61,42,.18)}
+body.ink-mode #poem{color:rgba(38,36,48,.88);text-shadow:none}
+body.ink-mode h2{color:rgba(38,36,48,.92)}
+body.ink-mode .lead{color:rgba(38,36,48,.62)}
+body.ink-mode .vignette{background:radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(112,100,78,.3) 100%)}
+body.ink-mode #bgCharName{color:rgba(38,36,48,.5)}
+body.ink-mode #law .eyebrow{color:var(--seal)}
+
 /* ---------- 第二章 · 万象 ---------- */
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;width:min(1240px,92vw);margin-top:7vh}
 .card{position:relative;text-align:left;padding:52px 34px 44px;background:rgba(12,12,17,.55);border:1px solid rgba(233,228,216,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow:hidden;transition:transform .5s cubic-bezier(.22,1,.36,1),border-color .5s}
@@ -407,7 +431,7 @@ function release(effect){
       case 'mountain':p.kind = 'mote';  p.vx = rand(-.12, .12); p.vy = rand(-.2, -.06); p.color = '150,168,138'; break;
       case 'sunglow': p.kind = 'mote';  p.vx = rand(.4, 1); p.vy = rand(-.06, .06); p.color = pick(['242,170,120','238,140,110','246,200,140']); break;
       case 'firefly': p.kind = 'firefly'; p.vx = rand(-.3, .3); p.vy = rand(-.2, .2); p.color = pick(['190,230,140','230,240,170']); break;
-      case 'ink':     p.kind = 'rain';  p.vx = rand(-.1, .1); p.vy = rand(1.6, 3); p.color = '118,112,168'; p.size = rand(1.6, 3); p.decay = 0; break;
+      case 'ink':     p.kind = 'rain';  p.vx = rand(-.1, .1); p.vy = rand(1.6, 3); p.color = '34,32,44'; p.size = rand(1.6, 3); p.decay = 0; break;
       case 'flower': {
         p.kind = 'petal';
         const a = rand(0, Math.PI * 2), s = rand(1, 4);
@@ -463,6 +487,7 @@ function spawnBolt(){
 
 /* ================= 八大法则发射器 ================= */
 let frame = 0, currentEffect = null;
+let inkBg = false;   /* 墨法：背景化作宣纸 */
 let shakeMag = 0;
 function shake(m){ shakeMag = Math.max(shakeMag, m); }
 
@@ -608,12 +633,23 @@ const emitters = {
       spawn({ x: rand(0, W), y: rand(H * .3, H * .92), vx: rand(-.3, .3), vy: rand(-.2, .2), mode: 'fx', kind: 'firefly', decay: .0012, life: 1, size: rand(1, 1.9), color: pick(['190,230,140','230,240,170','160,220,120']), alpha: rand(.6, 1) });
   },
   ink(){
-    for (let i = 0; i < 2; i++)
-      spawn({ x: rand(W * .08, W * .92), y: rand(-24, -4), vx: rand(-.1, .1), vy: rand(1.4, 2.6), mode: 'fx', kind: 'rain', decay: 0, life: 1, size: rand(2, 3.4), color: '118,112,168', alpha: rand(.5, .85) });
+    /* 墨滴垂落——疏落见笔意 */
+    spawn({ x: rand(W * .08, W * .92), y: rand(-24, -4), vx: rand(-.1, .1), vy: rand(1.2, 2.4), mode: 'fx', kind: 'rain', decay: 0, life: 1, size: rand(2, 3.6), color: '30,28,40', alpha: rand(.5, .9) });
+    /* 落墨涟漪 */
     if (frame % 22 === 0)
-      spawnRing(rand(W * .1, W * .9), H - rand(4, 22), rand(18, 44), '118,112,168', .5, .3);
+      spawnRing(rand(W * .1, W * .9), H - rand(4, 22), rand(18, 44), '34,32,44', .5, .3);
+    /* 墨花绽开——滴墨落纸，洇散成花 */
+    if (frame % 90 === 0){
+      const bx = rand(W * .15, W * .85), by = rand(H * .2, H * .68);
+      spawnRing(bx, by, rand(26, 60), '34,32,44', .55);
+      for (let i = 0; i < 9; i++){
+        const a = Math.random() * Math.PI * 2;
+        spawn({ x: bx, y: by, vx: Math.cos(a) * rand(.2, .8), vy: Math.sin(a) * rand(.2, .8), mode: 'fx', kind: 'mote', decay: rand(.004, .01), life: 1, size: rand(1, 2.4), color: '34,32,44', alpha: rand(.3, .6) });
+      }
+    }
+    /* 墨烟自池上升 */
     if (frame % 4 === 0)
-      spawn({ x: rand(0, W), y: H - rand(0, 50), vx: rand(-.2, .2), vy: rand(-.1, -.02), mode: 'fx', kind: 'mote', decay: .001, life: 1, size: rand(1.5, 3), color: '96,90,150', alpha: rand(.1, .25) });
+      spawn({ x: rand(0, W), y: H - rand(0, 50), vx: rand(-.2, .2), vy: rand(-.1, -.02), mode: 'fx', kind: 'mote', decay: .001, life: 1, size: rand(1.5, 3), color: '70,66,88', alpha: rand(.2, .4) });
   }
 };
 
@@ -847,21 +883,38 @@ function drawSunglow(t){
     ctx.fillRect(0, by - 14, W, 28);
   }
 }
+/* 墨 · 宣纸模式：纸底洇墨，留白为水，宿墨成晕 */
 function drawInk(t){
-  ctx.globalCompositeOperation = 'lighter';
-  const g = ctx.createLinearGradient(0, H * .72, 0, H);
-  g.addColorStop(0, 'rgba(96,90,150,0)');
-  g.addColorStop(1, `rgba(96,90,150,${.1 + .015 * Math.sin(t / 1700)})`);
+  ctx.globalCompositeOperation = 'source-over';
+  /* 墨池自纸底洇起 */
+  const g = ctx.createLinearGradient(0, H * .5, 0, H);
+  g.addColorStop(0, 'rgba(34,32,44,0)');
+  g.addColorStop(1, `rgba(34,32,44,${.32 + .03 * Math.sin(t / 1700)})`);
   ctx.fillStyle = g;
-  ctx.fillRect(0, H * .72, W, H * .28);
-  ctx.beginPath();
-  for (let x = 0; x <= W; x += 14){
-    const y = H * .93 + Math.sin(x * .008 + t / 700) * 4 + Math.sin(x * .02 - t / 500) * 2;
-    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  ctx.fillRect(0, H * .5, W, H * .5);
+  /* 墨面波光——纸上留白为水 */
+  for (let l = 0; l < 3; l++){
+    ctx.beginPath();
+    const baseY = H * (.78 + l * .06);
+    for (let x = 0; x <= W; x += 12){
+      const y = baseY + Math.sin(x * .007 + t / (760 + l * 240)) * 4 + Math.sin(x * .021 - t / 540) * 2.2;
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = `rgba(243,241,235,${.22 - l * .05})`;
+    ctx.lineWidth = 1.1;
+    ctx.stroke();
   }
-  ctx.strokeStyle = 'rgba(140,134,190,.22)';
-  ctx.lineWidth = 1.4;
-  ctx.stroke();
+  /* 墨晕呼吸——宿墨未干 */
+  for (let l = 0; l < 3; l++){
+    const bx = W * (.18 + l * .32), by = H * (.6 + .1 * Math.sin(t / 2300 + l * 2.1));
+    const r = 70 + 34 * Math.sin(t / 1500 + l * 2.4);
+    const g2 = ctx.createRadialGradient(bx, by, 0, bx, by, r);
+    g2.addColorStop(0, `rgba(34,32,44,${.1 + .03 * Math.sin(t / 1150 + l)})`);
+    g2.addColorStop(.65, 'rgba(34,32,44,.04)');
+    g2.addColorStop(1, 'rgba(34,32,44,0)');
+    ctx.fillStyle = g2;
+    ctx.fillRect(bx - r, by - r, r * 2, r * 2);
+  }
 }
 
 /* ================= 更新与绘制 ================= */
@@ -1063,7 +1116,8 @@ function tick(t){
   ctx.rotate(Math.sin(t / 6800) * .004 + rotKick);
   ctx.scale(cam.z + camPunch, cam.z + camPunch);
   ctx.translate(-W / 2, -H / 2);
-  ctx.fillStyle = 'rgba(7,7,9,.34)';
+  /* 墨法生效时背景化作宣纸——拖尾即墨痕，渐隐成韵 */
+  ctx.fillStyle = inkBg ? 'rgba(243,241,235,.34)' : 'rgba(7,7,9,.34)';
   ctx.fillRect(-W * .2, -H * .2, W * 1.4, H * 1.4);
 
   const has = e => currentEffect === 'world' || (Array.isArray(currentEffect) ? currentEffect.includes(e) : currentEffect === e);
@@ -1083,7 +1137,7 @@ function tick(t){
   if (has('wind')) drawWindLines(t);
   if (has('moon')) drawMoon(t);
   if (has('sunglow')) drawSunglow(t);
-  if (has('ink')) drawInk(t);
+  if (inkBg) drawInk(t);
   if (has('cloud')) drawClouds();
   if (has('stars') && nebula){
     ctx.globalCompositeOperation = 'lighter';
@@ -1091,7 +1145,8 @@ function tick(t){
   }
 
   if (rings.length){
-    ctx.globalCompositeOperation = 'lighter';
+    /* 白纸上涟漪用正片叠底，否则提亮 */
+    ctx.globalCompositeOperation = inkBg ? 'source-over' : 'lighter';
     for (let i = rings.length - 1; i >= 0; i--){
       const r = rings[i];
       r.r += (r.maxR - r.r) * .12; r.life -= r.decay;
@@ -1372,7 +1427,7 @@ const AudioEngine = {
 
 /* ================= 施法（言出法随） ================= */
 const laws = { '雨': 'rain', '雪': 'snow', '星': 'stars', '火': 'fire', '海': 'ocean', '雷': 'thunder', '電': 'thunder', '电': 'thunder', '风': 'wind', '風': 'wind', '花': 'flower', '月': 'moon',
-  '云': 'cloud', '雲': 'cloud', '山': 'mountain', '霞': 'sunglow', '萤': 'firefly', '螢': 'firefly', '墨': 'ink',
+  '云': 'cloud', '雲': 'cloud', '山': 'mountain', '霞': 'sunglow', '萤': 'firefly', '螢': 'firefly', '墨': 'ink', /* 白底见真墨 */
   '冰': ['snow','stars'], '霜': ['snow','moon'], '雾': ['cloud','wind'], '霧': ['cloud','wind'], '露': ['rain','flower'], '虹': ['rain','stars'],
   '烟': ['fire','wind'], '煙': ['fire','wind'], '炎': 'fire', '焰': 'fire', '光': ['stars','moon'], '夜': ['moon','stars'], '晓': ['sunglow','stars'], '曉': ['sunglow','stars'],
   '春': ['flower','rain'], '夏': ['fire','thunder'], '秋': ['wind','flower'], '冬': ['snow','wind'],
@@ -1380,7 +1435,7 @@ const laws = { '雨': 'rain', '雪': 'snow', '星': 'stars', '火': 'fire', '海
   '梦': ['moon','flower'], '夢': ['moon','flower'], '心': ['fire','moon'], '爱': ['flower','moon'], '愛': ['flower','moon'],
   '酒': ['moon','ocean'], '诗': ['wind','moon'], '詩': ['wind','moon'], '茶': ['flower','cloud'], '禅': ['moon','ink'] };
 const effNames = { rain: '细雨润物', snow: '雪落无声', stars: '星河璀璨', fire: '烈焰焚空', ocean: '沧海横流', thunder: '雷霆万钧', wind: '长风万里', flower: '繁花似锦', moon: '明月照彻', cloud: '云卷云舒', mountain: '远山如黛', sunglow: '霞光漫天', firefly: '流萤飞舞', ink: '墨染江山', world: '森罗万象', void: '万法归尘' };
-const ringColors = { rain: '148,168,205', snow: '236,240,248', stars: '230,220,190', fire: '232,164,80', ocean: '126,176,206', thunder: '200,214,255', wind: '205,205,195', flower: '230,180,150', moon: '214,228,255', cloud: '200,204,214', mountain: '150,168,138', sunglow: '240,168,118', firefly: '190,230,140', ink: '118,112,168', world: '230,201,138', void: '233,228,216' };
+const ringColors = { rain: '148,168,205', snow: '236,240,248', stars: '230,220,190', fire: '232,164,80', ocean: '126,176,206', thunder: '200,214,255', wind: '205,205,195', flower: '230,180,150', moon: '214,228,255', cloud: '200,204,214', mountain: '150,168,138', sunglow: '240,168,118', firefly: '190,230,140', ink: '34,32,44', world: '230,201,138', void: '233,228,216' };
 const fusionNames = { 'fire+wind': '焚天烈焰', 'ocean+stars': '星海倒映', 'snow+wind': '暴风雪', 'flower+wind': '花吹雪', 'rain+snow': '雨雪霏霏', 'fire+stars': '星火燎原', 'rain+thunder': '雷雨交加', 'flower+snow': '花雪同尘', 'ocean+thunder': '怒海惊雷', 'stars+wind': '星河流转', 'flower+stars': '花满星河', 'fire+ocean': '冰火同源', 'rain+stars': '星雨同辉', 'snow+stars': '雪夜星河', 'flower+rain': '花雨纷飞', 'ocean+rain': '江海同潮', 'fire+thunder': '雷火炼狱', 'ocean+wind': '海风怒涛', 'rain+wind': '风雨兼程', 'ocean+snow': '雪落沧海', 'flower+ocean': '海上花田', 'snow+thunder': '雷雪异象', 'stars+thunder': '星雷交响', 'thunder+wind': '风雷激荡', 'fire+snow': '雪火交融', 'flower+thunder': '惊雷绽芳', 'fire+rain': '火雨倾盆', 'fire+flower': '焰舞飞花', 'fire+moon': '烽火月夜', 'flower+moon': '花前月下', 'moon+ocean': '沧海月明', 'moon+rain': '云破月来', 'moon+stars': '星月交辉', 'moon+snow': '雪月同辉', 'moon+thunder': '月涌惊雷', 'moon+wind': '风月无边' };
 const multiNames = { 3: '三才同辉', 4: '四象汇聚', 5: '五行轮转', 6: '六合归一', 7: '七星连珠' };
 const multiPoems = { 3: '道生一 · 一生二 · 二生三 · 三生万物', 4: '两仪生四象 · 四象生八卦', 5: '五行相生 · 流转不息', 6: '六合之内 · 气象万千', 7: '七星高照 · 天命所归' };
@@ -1441,6 +1496,8 @@ function castLaw(word){
   castTimer = setTimeout(() => {
     currentEffect = eff;
     effectAge = 0;
+    inkBg = eff === 'ink' || (Array.isArray(eff) && eff.includes('ink'));
+    document.body.classList.toggle('ink-mode', inkBg);
     release(eff);
     const col = Array.isArray(eff) ? (ringColors[eff[0]] || '233,228,216') : (ringColors[eff] || '233,228,216');
     spawnRing(W / 2, H * .46, Math.min(W, H) * .42, col, 1);
@@ -1508,7 +1565,7 @@ if ('IntersectionObserver' in window){
       if (e.target.id !== 'hero') return;
       if (e.isIntersecting){
         heroVisible = true;
-        if (fontsReady){ currentEffect = null; formHero(); AudioEngine.setAmbient(null); bgChar.classList.remove('show'); }
+        if (fontsReady){ currentEffect = null; inkBg = false; document.body.classList.remove('ink-mode'); formHero(); AudioEngine.setAmbient(null); bgChar.classList.remove('show'); }
       } else if (heroVisible){
         heroVisible = false;
         if (!currentEffect){ currentEffect = 'void'; release('void'); }
