@@ -426,7 +426,16 @@ function release(effect){
       case 'ocean':   p.kind = 'bubble'; p.vx = 0; p.vy = rand(-2.2, -.9); p.color = '180,220,245'; p.decay = 0; break;
       case 'thunder': p.kind = 'mote';  p.vx = rand(-.3, .3); p.vy = rand(.2, .8); p.color = '118,124,148'; break;
       case 'wind':    p.kind = 'wind';  p.vx = rand(3, 7); p.vy = 0; p.color = '205,205,195'; p.decay = 0; break;
-      case 'moon':    p.kind = 'mote';  p.vx = rand(-.15, .15); p.vy = rand(-.12, .12); p.color = '214,228,255'; break;
+      case 'moon': {
+        /* 字聚为月——粒子化作满月，片刻后散去，月华常驻 */
+        p.kind = 'scale'; p.mode = 'seek';
+        const a = Math.random() * Math.PI * 2, rr = Math.sqrt(Math.random()) * Math.min(W, H) * .13;
+        p.tx = W * .76 + Math.cos(a) * rr;
+        p.ty = H * .24 + Math.sin(a) * rr;
+        p.color = pick(['246,247,250','228,233,242','214,228,255']);
+        p.decay = 0; p.life = 1;
+        break;
+      }
       case 'cloud':   p.kind = 'mote';  p.vx = rand(.2, .7); p.vy = rand(-.05, .05); p.color = '205,208,214'; p.size = rand(2, 4.5); break;
       case 'mountain':p.kind = 'mote';  p.vx = rand(-.12, .12); p.vy = rand(-.2, -.06); p.color = '150,168,138'; break;
       case 'sunglow': p.kind = 'mote';  p.vx = rand(.4, 1); p.vy = rand(-.06, .06); p.color = pick(['242,170,120','238,140,110','246,200,140']); break;
@@ -785,30 +794,69 @@ function drawWindLines(t){
 
 /* ================= 明月 ================= */
 function drawMoon(t){
-  const mx2 = W * .76, my2 = H * .24, R = Math.min(W, H) * .15;
-  ctx.globalCompositeOperation = 'lighter';
-  const halo = ctx.createRadialGradient(mx2, my2, R * .4, mx2, my2, R * 3.2);
-  halo.addColorStop(0, `rgba(214,228,255,${.1 + .02 * Math.sin(t / 1400)})`);
-  halo.addColorStop(1, 'rgba(214,228,255,0)');
-  ctx.fillStyle = halo;
-  ctx.fillRect(mx2 - R * 3.2, my2 - R * 3.2, R * 6.4, R * 6.4);
-  const disc = ctx.createRadialGradient(mx2 - R * .3, my2 - R * .3, R * .1, mx2, my2, R);
-  disc.addColorStop(0, 'rgba(240,244,252,.32)');
-  disc.addColorStop(.8, 'rgba(214,228,255,.18)');
-  disc.addColorStop(1, 'rgba(214,228,255,.05)');
+  const mx2 = W * .76, my2 = H * .24, R = Math.min(W, H) * .13;
+  const ink = inkBg;
+  /* 清辉 */
+  if (!ink){
+    ctx.globalCompositeOperation = 'lighter';
+    const halo = ctx.createRadialGradient(mx2, my2, R * .5, mx2, my2, R * 3.6);
+    halo.addColorStop(0, `rgba(226,234,248,${.15 + .025 * Math.sin(t / 1500)})`);
+    halo.addColorStop(.55, 'rgba(200,214,240,.05)');
+    halo.addColorStop(1, 'rgba(200,214,240,0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(mx2 - R * 3.6, my2 - R * 3.6, R * 7.2, R * 7.2);
+  }
+  /* 月盘——实体满月（禅时化作墨月） */
+  ctx.globalCompositeOperation = 'source-over';
+  const disc = ctx.createRadialGradient(mx2 - R * .35, my2 - R * .35, R * .1, mx2, my2, R);
+  if (ink){
+    disc.addColorStop(0, 'rgba(58,56,72,.5)');
+    disc.addColorStop(.75, 'rgba(48,46,62,.42)');
+    disc.addColorStop(1, 'rgba(40,38,54,.3)');
+  } else {
+    disc.addColorStop(0, 'rgba(246,247,250,.95)');
+    disc.addColorStop(.75, 'rgba(228,233,242,.88)');
+    disc.addColorStop(1, 'rgba(198,208,228,.72)');
+  }
   ctx.fillStyle = disc;
   ctx.beginPath(); ctx.arc(mx2, my2, R, 0, Math.PI * 2); ctx.fill();
-  const beam = ctx.createLinearGradient(mx2, my2, W * .3, H);
-  beam.addColorStop(0, 'rgba(214,228,255,.045)');
-  beam.addColorStop(1, 'rgba(214,228,255,0)');
-  ctx.fillStyle = beam;
-  ctx.beginPath();
-  ctx.moveTo(mx2 - R * .5, my2 + R * .3);
-  ctx.lineTo(mx2 + R * .5, my2 + R * .3);
-  ctx.lineTo(W * .44, H);
-  ctx.lineTo(W * .16, H);
-  ctx.closePath();
-  ctx.fill();
+  /* 月海 */
+  const seas = [[-.28, -.12, .34], [.18, .22, .26], [.3, -.28, .17], [-.05, .38, .15]];
+  for (const [ox, oy, sr] of seas){
+    const g = ctx.createRadialGradient(mx2 + ox * R, my2 + oy * R, 0, mx2 + ox * R, my2 + oy * R, sr * R);
+    g.addColorStop(0, ink ? 'rgba(28,26,40,.3)' : 'rgba(166,178,202,.3)');
+    g.addColorStop(1, 'rgba(166,178,202,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(mx2 + ox * R, my2 + oy * R, sr * R, 0, Math.PI * 2); ctx.fill();
+  }
+  /* 月缘清光 */
+  ctx.globalCompositeOperation = ink ? 'source-over' : 'lighter';
+  ctx.beginPath(); ctx.arc(mx2, my2, R + 1, 0, Math.PI * 2);
+  ctx.strokeStyle = ink ? 'rgba(52,50,66,.4)' : 'rgba(240,245,252,.5)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  /* 云翳掠月 */
+  const cx2 = ((t / 90) % (W + 700)) - 350;
+  if (Math.abs(cx2 - mx2) < R * 2.4){
+    const veil = ctx.createLinearGradient(cx2 - 170, 0, cx2 + 170, 0);
+    veil.addColorStop(0, 'rgba(210,218,234,0)');
+    veil.addColorStop(.5, `rgba(210,218,234,${ink ? .16 : .1})`);
+    veil.addColorStop(1, 'rgba(210,218,234,0)');
+    ctx.fillStyle = veil;
+    ctx.fillRect(cx2 - 170, my2 - R * 1.3, 340, R * 2.6);
+  }
+  /* 地面银波——明月照彻 */
+  for (let l = 0; l < 3; l++){
+    ctx.beginPath();
+    const baseY = H * (.88 + l * .04);
+    for (let x = 0; x <= W; x += 16){
+      const y = baseY + Math.sin(x * .006 + t / (820 + l * 210)) * 3 + Math.sin(x * .017 - t / 560) * 1.8;
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = ink ? `rgba(52,50,66,${.18 - l * .04})` : `rgba(214,228,252,${.13 - l * .03})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
 }
 
 /* ================= 云团 ================= */
@@ -1550,7 +1598,7 @@ const laws = { '雨': 'rain', '雪': 'snow', '星': 'stars', '火': 'fire', '海
   '酒': ['moon','ocean'], '诗': ['wind','moon'], '詩': ['wind','moon'], '茶': ['flower','cloud'], '禅': ['moon','ink'] };
 const effNames = { rain: '细雨润物', snow: '雪落无声', stars: '星河璀璨', fire: '烈焰焚空', ocean: '沧海横流', thunder: '雷霆万钧', wind: '长风万里', flower: '繁花似锦', moon: '明月照彻', cloud: '云卷云舒', mountain: '远山如黛', sunglow: '霞光漫天', firefly: '流萤飞舞', ink: '墨染江山', dragon: '龙游太虚', world: '森罗万象', void: '万法归尘' };
 const ringColors = { rain: '148,168,205', snow: '236,240,248', stars: '230,220,190', fire: '232,164,80', ocean: '126,176,206', thunder: '200,214,255', wind: '205,205,195', flower: '230,180,150', moon: '214,228,255', cloud: '200,204,214', mountain: '150,168,138', sunglow: '240,168,118', firefly: '190,230,140', ink: '34,32,44', dragon: '222,186,110', world: '230,201,138', void: '233,228,216' };
-const fusionNames = { 'fire+wind': '焚天烈焰', 'ocean+stars': '星海倒映', 'snow+wind': '暴风雪', 'flower+wind': '花吹雪', 'rain+snow': '雨雪霏霏', 'fire+stars': '星火燎原', 'rain+thunder': '雷雨交加', 'flower+snow': '花雪同尘', 'ocean+thunder': '怒海惊雷', 'stars+wind': '星河流转', 'flower+stars': '花满星河', 'fire+ocean': '冰火同源', 'rain+stars': '星雨同辉', 'snow+stars': '雪夜星河', 'flower+rain': '花雨纷飞', 'ocean+rain': '江海同潮', 'fire+thunder': '雷火炼狱', 'ocean+wind': '海风怒涛', 'rain+wind': '风雨兼程', 'ocean+snow': '雪落沧海', 'flower+ocean': '海上花田', 'snow+thunder': '雷雪异象', 'stars+thunder': '星雷交响', 'thunder+wind': '风雷激荡', 'fire+snow': '雪火交融', 'flower+thunder': '惊雷绽芳', 'fire+rain': '火雨倾盆', 'fire+flower': '焰舞飞花', 'fire+moon': '烽火月夜', 'flower+moon': '花前月下', 'moon+ocean': '沧海月明', 'moon+rain': '云破月来', 'moon+stars': '星月交辉', 'moon+snow': '雪月同辉', 'moon+thunder': '月涌惊雷', 'moon+wind': '风月无边' };
+const fusionNames = { 'fire+wind': '焚天烈焰', 'ocean+stars': '星海倒映', 'snow+wind': '暴风雪', 'flower+wind': '花吹雪', 'rain+snow': '雨雪霏霏', 'fire+stars': '星火燎原', 'rain+thunder': '雷雨交加', 'flower+snow': '花雪同尘', 'ocean+thunder': '怒海惊雷', 'stars+wind': '星河流转', 'flower+stars': '花满星河', 'fire+ocean': '冰火同源', 'rain+stars': '星雨同辉', 'snow+stars': '雪夜星河', 'flower+rain': '花雨纷飞', 'ocean+rain': '江海同潮', 'fire+thunder': '雷火炼狱', 'ocean+wind': '海风怒涛', 'rain+wind': '风雨兼程', 'ocean+snow': '雪落沧海', 'flower+ocean': '海上花田', 'snow+thunder': '雷雪异象', 'stars+thunder': '星雷交响', 'thunder+wind': '风雷激荡', 'fire+snow': '雪火交融', 'flower+thunder': '惊雷绽芳', 'fire+rain': '火雨倾盆', 'fire+flower': '焰舞飞花', 'fire+moon': '烽火月夜', 'flower+moon': '花前月下', 'moon+ocean': '沧海月明', 'moon+rain': '云破月来', 'moon+stars': '星月交辉', 'moon+snow': '雪月同辉', 'moon+thunder': '月涌惊雷', 'moon+wind': '风月无边', 'ink+moon': '禅心墨月' };
 const multiNames = { 3: '三才同辉', 4: '四象汇聚', 5: '五行轮转', 6: '六合归一', 7: '七星连珠' };
 const multiPoems = { 3: '道生一 · 一生二 · 二生三 · 三生万物', 4: '两仪生四象 · 四象生八卦', 5: '五行相生 · 流转不息', 6: '六合之内 · 气象万千', 7: '七星高照 · 天命所归' };
 /* ================= 背景大字 ================= */
