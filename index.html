@@ -678,12 +678,12 @@ const emitters = {
     /* 弹幕刷屏——「靠”自右而左，间或混入🖕 */
     if (danmakus.length < 42 && frame % 5 === 0){
       const big = Math.random() < .06;
-      const rude = !big && Math.random() < .09;
+      const rude = !big && Math.random() < .22;
       danmakus.push({
         text: rude ? '🖕' : '靠',
         x: W + 80, y: rand(H * .08, H * .95),
         v: big ? rand(.5, .9) : rand(1.6, 4.6),
-        size: big ? rand(90, 150) : rand(13, 46),
+        size: big ? rand(90, 150) : rude ? rand(22, 58) : rand(13, 46),
         w: big ? 900 : 600,
         a: big ? rand(.06, .12) : rand(.14, .8),
         color: rude || Math.random() < .2 ? '232,100,90' : pick(['225,225,232','200,200,210','240,226,190'])
@@ -997,8 +997,16 @@ function drawHeart(t){
 
 /* ================= 弹幕「靠」 ================= */
 const danmakus = [];
-function drawKao(){
+function drawKao(t){
   ctx.globalCompositeOperation = 'source-over';
+  /* 背景巨指——大音希声，大指希形 */
+  const midA = .05 + .022 * Math.sin(t / 1600);
+  const midY = H * .52 + Math.sin(t / 2300) * H * .015;
+  ctx.font = `900 ${Math.min(W, H) * .5}px "Noto Serif SC", serif`;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = `rgba(225,225,232,${midA})`;
+  ctx.fillText('🖕', W * .5, midY);
+  ctx.textAlign = 'start';
   for (let i = danmakus.length - 1; i >= 0; i--){
     const d = danmakus[i];
     d.x -= d.v;
@@ -1449,7 +1457,7 @@ function tick(t){
   if (has('wind')) drawWindLines(t);
   if (has('moon')) drawMoon(t);
         if (has('heart')) drawHeart(t);
-  if (Array.isArray(currentEffect) ? currentEffect.includes('kao') : currentEffect === 'kao') drawKao();
+  if (Array.isArray(currentEffect) ? currentEffect.includes('kao') : currentEffect === 'kao') drawKao(t);
   if (has('sunglow')) drawSunglow(t);
   if (has('dragon')) drawDragon(t);
   if (inkBg) drawInk(t);
