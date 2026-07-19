@@ -137,6 +137,29 @@ body.ink-mode .lead{color:rgba(38,36,48,.62)}
 body.ink-mode .vignette{background:radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(112,100,78,.3) 100%)}
 body.ink-mode #bgCharName{color:rgba(38,36,48,.5)}
 body.ink-mode #law .eyebrow{color:var(--seal)}
+/* ---------- 心法：背景化作胭脂 ---------- */
+body.rom-mode .chip{color:rgba(116,40,58,.92);border-color:rgba(116,40,58,.3);background:rgba(116,40,58,.04)}
+body.rom-mode .chip:hover,body.rom-mode .chip.active{border-color:#b8405c;color:#b8405c;box-shadow:0 12px 30px -10px rgba(184,64,92,.32)}
+body.rom-mode .cmd-input{color:rgba(116,40,58,.95);border-bottom-color:rgba(116,40,58,.35)}
+body.rom-mode .cmd-input::placeholder{color:rgba(116,40,58,.4)}
+body.rom-mode nav{background:rgba(252,240,242,.55);border-bottom-color:rgba(116,40,58,.1)}
+body.rom-mode .brand-text{color:rgba(116,40,58,.92)}
+body.rom-mode .links a{color:rgba(116,40,58,.58)}
+body.rom-mode .links a:hover{color:#b8405c}
+body.rom-mode .links a::after{background:#b8405c}
+body.rom-mode .cmd-input:focus{border-color:#b8405c;box-shadow:0 18px 30px -22px rgba(184,64,92,.35)}
+body.rom-mode .status{color:#b8405c}
+body.rom-mode .status .prompt{color:rgba(116,40,58,.35)}
+body.rom-mode .caret{color:#b8405c}
+body.rom-mode .mode-btn,body.rom-mode .sound-toggle,body.rom-mode .auto-play{color:rgba(116,40,58,.62);border-color:rgba(116,40,58,.28)}
+body.rom-mode .mode-btn:hover,body.rom-mode .sound-toggle:hover,body.rom-mode .auto-play:hover{color:#b8405c;border-color:#b8405c}
+body.rom-mode .mode-btn.on,body.rom-mode .auto-play.on{color:#b8405c;border-color:#b8405c;box-shadow:0 0 18px rgba(184,64,92,.2)}
+body.rom-mode #poem{color:rgba(116,40,58,.88);text-shadow:none}
+body.rom-mode h2{color:rgba(116,40,58,.92)}
+body.rom-mode .lead{color:rgba(116,40,58,.62)}
+body.rom-mode .vignette{background:radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(196,110,124,.32) 100%)}
+body.rom-mode #bgCharName{color:rgba(116,40,58,.5)}
+body.rom-mode #law .eyebrow{color:#b8405c}
 
 /* ---------- 第二章 · 万象 ---------- */
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;width:min(1240px,92vw);margin-top:7vh}
@@ -433,7 +456,7 @@ function release(effect){
         const s = Math.min(W, H) * .011 * fill;
         p.tx = W * .5 + 16 * Math.pow(Math.sin(a), 3) * s;
         p.ty = H * .4 - (13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)) * s;
-        p.color = pick(['252,214,200','238,160,170','246,196,180']);
+        p.color = romBg ? pick(['190,70,92','204,96,116','172,66,80']) : pick(['252,214,200','238,160,170','246,196,180']);
         p.decay = 0; p.life = 1;
         break;
       }
@@ -518,6 +541,7 @@ function spawnBolt(){
 /* ================= 八大法则发射器 ================= */
 let frame = 0, currentEffect = null;
 let inkBg = false;   /* 墨法：背景化作宣纸 */
+let romBg = false;   /* 心法：背景化作胭脂 */
 let shakeMag = 0;
 function shake(m){ shakeMag = Math.max(shakeMag, m); }
 
@@ -647,13 +671,13 @@ const emitters = {
   heart(){
     /* 玫瑰光尘 */
     if (frame % 4 === 0)
-      spawn({ x: rand(0, W), y: rand(0, H * .7), vx: rand(-.15, .15), vy: rand(-.06, .06), mode: 'fx', kind: 'mote', decay: .0015, life: 1, size: rand(.8, 2), color: pick(['238,160,170','246,200,180','240,214,180']), alpha: rand(.25, .55) });
+      spawn({ x: rand(0, W), y: rand(0, H * .7), vx: rand(-.15, .15), vy: rand(-.06, .06), mode: 'fx', kind: 'mote', decay: .0015, life: 1, size: rand(.8, 2), color: romBg ? pick(['200,90,110','214,130,146','172,66,80']) : pick(['238,160,170','246,200,180','240,214,180']), alpha: rand(.25, .55) });
     /* 心尖升起的小心愿 */
     if (frame % 26 === 0)
-      spawn({ x: W * .5 + rand(-90, 90), y: H * .52, vx: rand(-.2, .2), vy: rand(-.9, -.4), mode: 'fx', kind: 'spark', decay: rand(.004, .008), life: 1, size: rand(1, 2.2), color: pick(['252,214,200','238,160,170']), alpha: rand(.6, 1) });
+      spawn({ x: W * .5 + rand(-90, 90), y: H * .52, vx: rand(-.2, .2), vy: rand(-.9, -.4), mode: 'fx', kind: 'spark', decay: rand(.004, .008), life: 1, size: rand(1, 2.2), color: romBg ? pick(['190,70,92','214,110,130']) : pick(['252,214,200','238,160,170']), alpha: rand(.6, 1) });
     /* 玫瑰花瓣旋落 */
     if (frame % 9 === 0)
-      spawn({ x: rand(0, W), y: -10, vx: rand(-.4, .4), vy: rand(.4, .9), mode: 'fx', kind: 'pollen', decay: rand(.002, .004), life: 1, size: rand(.9, 1.8), color: pick(['240,170,170','246,196,180']), alpha: rand(.5, .9) });
+      spawn({ x: rand(0, W), y: -10, vx: rand(-.4, .4), vy: rand(.4, .9), mode: 'fx', kind: 'pollen', decay: rand(.002, .004), life: 1, size: rand(.9, 1.8), color: romBg ? pick(['214,110,130','222,140,152']) : pick(['240,170,170','246,196,180']), alpha: rand(.5, .9) });
   },
   cloud(){
     if (clouds.length < 6 && frame % 200 === 0)
@@ -891,12 +915,13 @@ function heartPath(cx, cy, s){
   }
   ctx.closePath();
 }
+const floatHearts = [];
 function drawHeart(t){
-  const cx = W * .5, cy = H * .4, ink = inkBg;
+  const cx = W * .5, cy = H * .4, ink = inkBg, rom = romBg;
   /* lub-dub 双跳节律 */
   const beat = Math.pow(Math.max(Math.sin(t / 480), 0), 4) + .55 * Math.pow(Math.max(Math.sin(t / 480 - .8), 0), 6);
   const s = Math.min(W, H) * .011 * (1 + beat * .08);
-  if (!ink){
+  if (!ink && !rom){
     ctx.globalCompositeOperation = 'lighter';
     const halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, s * 26);
     halo.addColorStop(0, `rgba(238,150,160,${.1 + beat * .06})`);
@@ -905,12 +930,16 @@ function drawHeart(t){
     ctx.fillRect(cx - s * 26, cy - s * 26, s * 52, s * 52);
   }
   /* 心体 */
-  ctx.globalCompositeOperation = ink ? 'source-over' : 'lighter';
+  ctx.globalCompositeOperation = (ink || rom) ? 'source-over' : 'lighter';
   const body = ctx.createRadialGradient(cx - s * 5, cy - s * 6, s * 2, cx, cy, s * 17);
   if (ink){
     body.addColorStop(0, 'rgba(172,66,58,.4)');
     body.addColorStop(.6, 'rgba(158,54,48,.28)');
     body.addColorStop(1, 'rgba(140,46,44,.12)');
+  } else if (rom){
+    body.addColorStop(0, 'rgba(214,74,100,.42)');
+    body.addColorStop(.6, 'rgba(196,58,86,.3)');
+    body.addColorStop(1, 'rgba(176,48,76,.14)');
   } else {
     body.addColorStop(0, 'rgba(250,196,196,.34)');
     body.addColorStop(.6, 'rgba(238,150,160,.22)');
@@ -921,9 +950,25 @@ function drawHeart(t){
   ctx.fill();
   /* 心缘 */
   heartPath(cx, cy, s);
-  ctx.strokeStyle = ink ? `rgba(158,54,48,${.4 + beat * .2})` : `rgba(252,214,200,${.35 + beat * .25})`;
+  ctx.strokeStyle = ink ? `rgba(158,54,48,${.4 + beat * .2})` : rom ? `rgba(184,64,92,${.45 + beat * .2})` : `rgba(252,214,200,${.35 + beat * .25})`;
   ctx.lineWidth = 1.4;
   ctx.stroke();
+  /* 满屏浮心——大大小小的心，各自搏动，生生灭灭 */
+  if (floatHearts.length < 16 && frame % 13 === 0)
+    floatHearts.push({ x: rand(W * .05, W * .95), y: rand(H * .08, H * .96), r: rand(3, 11), ph: rand(0, 6.28), rise: rand(.08, .26), life: 0, ttl: rand(480, 1200), max: rand(.12, .32) });
+  for (let i = floatHearts.length - 1; i >= 0; i--){
+    const h = floatHearts[i];
+    h.life++;
+    h.y -= h.rise;
+    h.x += Math.sin(t / 900 + h.ph) * .32;
+    if (h.life >= h.ttl || h.y < -30){ floatHearts.splice(i, 1); continue; }
+    const a = h.max * Math.min(1, h.life / 70) * Math.min(1, (h.ttl - h.life) / 90);
+    if (a <= 0) continue;
+    const hb = 1 + .14 * Math.pow(Math.max(Math.sin(t / 480 + h.ph), 0), 4);
+    heartPath(h.x, h.y, h.r / 16 * hb);
+    ctx.fillStyle = rom ? `rgba(196,64,90,${a})` : ink ? `rgba(158,54,48,${a})` : `rgba(242,172,182,${a})`;
+    ctx.fill();
+  }
 }
 
 /* ================= 云团 ================= */
@@ -1230,7 +1275,7 @@ function draw(p, t){
     a *= Math.pow(Math.max(0, Math.sin(t / (150 + p.seed % 200) + p.seed * 3)), 2);
   let dx = 0, dy = 0;
   if (p.mode === 'seek' && p.kind !== 'star'){ dx = Math.sin(t / 700 + p.seed) * .7; dy = Math.cos(t / 800 + p.seed) * .7; }
-  const glow = (p.kind === 'fire' || p.kind === 'petal' || p.kind === 'star' || p.kind === 'heroStar' || p.kind === 'shoot' || p.kind === 'foam' || p.kind === 'spark' || p.kind === 'pollen' || p.kind === 'snowBig' || p.kind === 'burst' || p.kind === 'bubble' || p.kind === 'firefly' || p.kind === 'scale');
+  const glow = (p.kind === 'fire' || p.kind === 'petal' || p.kind === 'star' || p.kind === 'heroStar' || p.kind === 'shoot' || p.kind === 'foam' || p.kind === 'spark' || p.kind === 'pollen' || p.kind === 'snowBig' || p.kind === 'burst' || p.kind === 'bubble' || p.kind === 'firefly' || p.kind === 'scale') && !romBg;
   ctx.globalCompositeOperation = glow ? 'lighter' : 'source-over';
   if (p.kind === 'heroStar'){
     const fl = p.flare * (.65 + .35 * Math.sin(t / 760 + p.seed));
@@ -1346,7 +1391,7 @@ function tick(t){
   ctx.scale(cam.z + camPunch, cam.z + camPunch);
   ctx.translate(-W / 2, -H / 2);
   /* 墨法生效时背景化作宣纸——拖尾即墨痕，渐隐成韵 */
-  ctx.fillStyle = inkBg ? 'rgba(243,241,235,.34)' : 'rgba(7,7,9,.34)';
+  ctx.fillStyle = inkBg ? 'rgba(243,241,235,.34)' : romBg ? 'rgba(252,240,242,.34)' : 'rgba(7,7,9,.34)';
   ctx.fillRect(-W * .2, -H * .2, W * 1.4, H * 1.4);
 
   const has = e => currentEffect === 'world' || (Array.isArray(currentEffect) ? currentEffect.includes(e) : currentEffect === e);
@@ -1377,7 +1422,7 @@ function tick(t){
 
   if (rings.length){
     /* 白纸上涟漪用正片叠底，否则提亮 */
-    ctx.globalCompositeOperation = inkBg ? 'source-over' : 'lighter';
+    ctx.globalCompositeOperation = (inkBg || romBg) ? 'source-over' : 'lighter';
     for (let i = rings.length - 1; i >= 0; i--){
       const r = rings[i];
       r.r += (r.maxR - r.r) * .12; r.life -= r.decay;
@@ -1739,6 +1784,9 @@ function castLaw(word){
     effectAge = 0;
     inkBg = eff === 'ink' || (Array.isArray(eff) && eff.includes('ink'));
     document.body.classList.toggle('ink-mode', inkBg);
+    romBg = !inkBg && (eff === 'heart' || (Array.isArray(eff) && eff.includes('heart')));
+    document.body.classList.toggle('rom-mode', romBg);
+    if (!romBg) floatHearts.length = 0;
     release(eff);
     const col = Array.isArray(eff) ? (ringColors[eff[0]] || '233,228,216') : (ringColors[eff] || '233,228,216');
     spawnRing(W / 2, H * .46, Math.min(W, H) * .42, col, 1);
@@ -1806,7 +1854,7 @@ if ('IntersectionObserver' in window){
       if (e.target.id !== 'hero') return;
       if (e.isIntersecting){
         heroVisible = true;
-        if (fontsReady){ currentEffect = null; inkBg = false; document.body.classList.remove('ink-mode'); formHero(); AudioEngine.setAmbient(null); bgChar.classList.remove('show'); }
+        if (fontsReady){ currentEffect = null; inkBg = false; romBg = false; floatHearts.length = 0; document.body.classList.remove('ink-mode'); document.body.classList.remove('rom-mode'); formHero(); AudioEngine.setAmbient(null); bgChar.classList.remove('show'); }
       } else if (heroVisible){
         heroVisible = false;
         if (!currentEffect){ currentEffect = 'void'; release('void'); }
