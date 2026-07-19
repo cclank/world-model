@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/status-actively%20maintained-success" alt="Maintained">
 </p>
 
-**English** | [简体中文](README.zh-CN.md)
+**English** | [简体中文](README.zh-CN.md) | [Live Demo](https://world-model.pages.dev/)
 
 ---
 

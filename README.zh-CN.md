@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/状态-积极维护-success" alt="积极维护">
 </p>
 
-[English](README.md) | **简体中文**
+[English](README.md) | **简体中文** | [在线体验](https://world-model.pages.dev/)
 
 ---
 
